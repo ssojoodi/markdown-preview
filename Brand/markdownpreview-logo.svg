@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">Markdown Preview logo</title>
+  <desc id="desc">Elegant serif Md monogram with a wordmark.</desc>
+  <rect width="1200" height="320" fill="none"/>
+  <g fill="#1f1a17">
+    <text
+      x="86"
+      y="208"
+      font-family="Baskerville, 'Iowan Old Style', 'Times New Roman', serif"
+      font-size="190"
+      font-weight="600"
+      letter-spacing="-10">M</text>
+    <text
+      x="266"
+      y="208"
+      font-family="Baskerville, 'Iowan Old Style', 'Times New Roman', serif"
+      font-size="198"
+      font-style="italic"
+      font-weight="500"
+      letter-spacing="-6">d</text>
+  </g>
+  <line x1="380" y1="160" x2="430" y2="160" stroke="#b89b72" stroke-width="2"/>
+  <text
+    x="468"
+    y="171"
+    fill="#1f1a17"
+    font-family="Baskerville, 'Iowan Old Style', 'Times New Roman', serif"
+    font-size="74"
+    font-weight="600"
+    letter-spacing="0.5">Markdown Preview</text>
+  <text
+    x="472"
+    y="212"
+    fill="#7d6956"
+    font-family="'Avenir Next', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-size="22"
+    letter-spacing="6">QUICK LOOK FOR MARKDOWN</text>
+</svg>

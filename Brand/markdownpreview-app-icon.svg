@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Markdown Preview app icon</title>
+  <desc id="desc">Square app icon with an elegant serif Md monogram.</desc>
+  <rect width="1024" height="1024" rx="232" fill="#f7f2e8"/>
+  <rect x="66" y="66" width="892" height="892" rx="186" fill="none" stroke="#c9b59a" stroke-width="8"/>
+  <rect x="112" y="112" width="800" height="800" rx="148" fill="none" stroke="#e3d7c7" stroke-width="2"/>
+  <g fill="#1f1a17">
+    <text
+      x="255"
+      y="606"
+      font-family="Baskerville, 'Iowan Old Style', 'Times New Roman', serif"
+      font-size="430"
+      font-weight="600"
+      letter-spacing="-28">M</text>
+    <text
+      x="645"
+      y="600"
+      font-family="Baskerville, 'Iowan Old Style', 'Times New Roman', serif"
+      font-size="446"
+      font-style="italic"
+      font-weight="500"
+      letter-spacing="-18">d</text>
+  </g>
+  <line x1="236" y1="724" x2="788" y2="724" stroke="#b89b72" stroke-width="6" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,13 @@
+.DS_Store
+
+# Local build products and Xcode caches
+.build/
+DerivedData/
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Local signing secrets
+Config/LocalSigning.xcconfig
