@@ -32,7 +32,15 @@ Markdown Preview uses a lightweight built-in renderer. It is not a full CommonMa
 
 ## Signing
 
-The shared project reads its Apple Development Team ID from `Config/Signing.xcconfig`, which optionally includes a gitignored local file.
+The shared project reads its Apple Development Team ID from `Config/Signing.xcconfig`, which optionally includes a gitignored local file. The default build uses Xcode automatic signing and requires an Apple Development certificate for that team.
+
+For local compile/run checks without an Apple Developer certificate, use the ad-hoc local build target:
+
+```bash
+make buildlocal
+```
+
+To make the default build work, install an Apple Development certificate for your team, then configure the local team file:
 
 1. Copy the example signing config:
 
@@ -47,6 +55,8 @@ DEVELOPMENT_TEAM = YOURTEAMID
 ```
 
 `Config/LocalSigning.xcconfig` is ignored by git and should not be committed.
+
+Then run `make build`.
 
 ## Build And Run
 

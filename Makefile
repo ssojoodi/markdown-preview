@@ -2,7 +2,9 @@ PROJECT := MarkdownPreview.xcodeproj
 SCHEME := MarkdownPreview
 CONFIGURATION := Debug
 DESTINATION := platform=macOS
-DERIVED_DATA := ./.build/SignedDerivedData
+DERIVED_DATA := ./.build/DerivedData
+LOCAL_SIGNING_FLAGS := CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER=
+XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration $(CONFIGURATION) -destination '$(DESTINATION)'
 APP_NAME := MarkdownPreview.app
 BUILD_APP := $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)/$(APP_NAME)
 INSTALL_APP := /Applications/$(APP_NAME)
@@ -16,23 +18,42 @@ LOGO_PNG := $(BRAND_BUILD_DIR)/markdownpreview-logo.png
 APP_ICON_PNG := $(BRAND_BUILD_DIR)/markdownpreview-app-icon.png
 ASSETCATALOG_DIR := App/Assets.xcassets
 APPICONSET_DIR := $(ASSETCATALOG_DIR)/AppIcon.appiconset
+APP_ICON_FILES := $(APPICONSET_DIR)/appicon-*.png
+APP_ICON_SPECS := \
+	16.png:16 \
+	16@2x.png:32 \
+	32.png:32 \
+	32@2x.png:64 \
+	128.png:128 \
+	128@2x.png:256 \
+	256.png:256 \
+	256@2x.png:512 \
+	512.png:512 \
+	512@2x.png:copy
 
-.PHONY: assets build install uninstall rebuild refresh clean paths
+.PHONY: assets build buildlocal install uninstall rebuild refresh clean paths
+
+define run_build
+$(XCODEBUILD) -derivedDataPath $(DERIVED_DATA) clean build $(1)
+endef
 
 build: assets
-	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration $(CONFIGURATION) -destination '$(DESTINATION)' -derivedDataPath $(DERIVED_DATA) clean build
+	$(call run_build,)
 
-assets: $(LOGO_PNG) $(APP_ICON_PNG) \
-	$(APPICONSET_DIR)/appicon-16.png \
-	$(APPICONSET_DIR)/appicon-16@2x.png \
-	$(APPICONSET_DIR)/appicon-32.png \
-	$(APPICONSET_DIR)/appicon-32@2x.png \
-	$(APPICONSET_DIR)/appicon-128.png \
-	$(APPICONSET_DIR)/appicon-128@2x.png \
-	$(APPICONSET_DIR)/appicon-256.png \
-	$(APPICONSET_DIR)/appicon-256@2x.png \
-	$(APPICONSET_DIR)/appicon-512.png \
-	$(APPICONSET_DIR)/appicon-512@2x.png
+buildlocal: assets
+	$(call run_build,$(LOCAL_SIGNING_FLAGS))
+
+assets: $(LOGO_PNG) $(APP_ICON_PNG)
+	mkdir -p $(APPICONSET_DIR)
+	for spec in $(APP_ICON_SPECS); do \
+		name=$${spec%:*}; \
+		size=$${spec#*:}; \
+		if [ "$$size" = copy ]; then \
+			cp $(APP_ICON_PNG) $(APPICONSET_DIR)/appicon-$$name; \
+		else \
+			sips -z $$size $$size $(APP_ICON_PNG) --out $(APPICONSET_DIR)/appicon-$$name >/dev/null; \
+		fi; \
+	done
 
 $(LOGO_PNG): $(LOGO_SVG) $(SVG_RENDERER)
 	mkdir -p $(BRAND_BUILD_DIR)
@@ -41,46 +62,6 @@ $(LOGO_PNG): $(LOGO_SVG) $(SVG_RENDERER)
 $(APP_ICON_PNG): $(APP_ICON_SVG) $(SVG_RENDERER)
 	mkdir -p $(BRAND_BUILD_DIR)
 	swift $(SVG_RENDERER) $(APP_ICON_SVG) $(APP_ICON_PNG) 1024 1024
-
-$(APPICONSET_DIR)/appicon-16.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	sips -z 16 16 $(APP_ICON_PNG) --out $@ >/dev/null
-
-$(APPICONSET_DIR)/appicon-16@2x.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	sips -z 32 32 $(APP_ICON_PNG) --out $@ >/dev/null
-
-$(APPICONSET_DIR)/appicon-32.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	sips -z 32 32 $(APP_ICON_PNG) --out $@ >/dev/null
-
-$(APPICONSET_DIR)/appicon-32@2x.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	sips -z 64 64 $(APP_ICON_PNG) --out $@ >/dev/null
-
-$(APPICONSET_DIR)/appicon-128.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	sips -z 128 128 $(APP_ICON_PNG) --out $@ >/dev/null
-
-$(APPICONSET_DIR)/appicon-128@2x.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	sips -z 256 256 $(APP_ICON_PNG) --out $@ >/dev/null
-
-$(APPICONSET_DIR)/appicon-256.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	sips -z 256 256 $(APP_ICON_PNG) --out $@ >/dev/null
-
-$(APPICONSET_DIR)/appicon-256@2x.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	sips -z 512 512 $(APP_ICON_PNG) --out $@ >/dev/null
-
-$(APPICONSET_DIR)/appicon-512.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	sips -z 512 512 $(APP_ICON_PNG) --out $@ >/dev/null
-
-$(APPICONSET_DIR)/appicon-512@2x.png: $(APP_ICON_PNG)
-	mkdir -p $(APPICONSET_DIR)
-	cp $(APP_ICON_PNG) $@
 
 install:
 	rm -rf $(INSTALL_APP)
@@ -102,8 +83,8 @@ refresh:
 
 clean:
 	rm -rf $(BRAND_BUILD_DIR)
-	rm -f $(APPICONSET_DIR)/appicon-*.png
-	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration $(CONFIGURATION) -destination '$(DESTINATION)' -derivedDataPath $(DERIVED_DATA) clean
+	rm -rf $(DERIVED_DATA)
+	rm -f $(APP_ICON_FILES)
 
 paths:
 	@echo "Built app: $(BUILD_APP)"
