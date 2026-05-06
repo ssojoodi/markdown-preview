@@ -46,6 +46,7 @@ mkdir -p "$staging_dir/.background" "$work_dir" "$(dirname "$dmg_path")"
 ditto "$app_path" "$staging_dir/$app_name"
 ln -s /Applications "$staging_dir/Applications"
 cp "$background_png" "$staging_dir/.background/background.png"
+chflags hidden "$staging_dir/.background"
 
 hdiutil create \
   -quiet \
@@ -58,6 +59,7 @@ hdiutil create \
 
 hdiutil attach "$rw_dmg" -quiet -readwrite -noverify -noautoopen -mountpoint "$mount_dir"
 mounted=1
+chflags hidden "$mount_dir/.background" "$mount_dir/.fseventsd" 2>/dev/null || true
 
 osascript - "$volume_name" "$app_name" <<'APPLESCRIPT'
 on run argv
@@ -81,6 +83,12 @@ on run argv
 
       set position of item appName of container window to {169, 230}
       set position of item "Applications" of container window to {491, 230}
+      try
+        set position of item ".background" of container window to {1200, 1200}
+      end try
+      try
+        set position of item ".fseventsd" of container window to {1200, 1200}
+      end try
 
       update without registering applications
       delay 1
@@ -90,6 +98,7 @@ on run argv
 end run
 APPLESCRIPT
 
+chflags hidden "$mount_dir/.background" "$mount_dir/.fseventsd" 2>/dev/null || true
 sync
 hdiutil detach "$mount_dir" -quiet
 mounted=0
