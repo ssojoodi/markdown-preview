@@ -19,6 +19,13 @@ struct MarkdownPreviewApp: App {
             }
         }
         .windowResizability(.contentSize)
+        .commands {
+            CommandGroup(replacing: .help) {
+                Button("Markdown Preview Help") {
+                    HelpPresenter.showHelp()
+                }
+            }
+        }
     }
 
     private static func binaryModificationDate() -> Date? {
@@ -72,7 +79,7 @@ private struct AppPreviewView: View {
     @AppStorage("didCompleteQuickLookSetup") private var didCompleteQuickLookSetup = false
     @State private var selectedFileURL: URL?
     @State private var selectedFilePath: String = "No file selected"
-    @State private var renderedHTML: String = "<html><body style='font: 15px -apple-system; padding:20px;'>Choose a Markdown file to preview.</body></html>"
+    @State private var renderedHTML: String = PreviewHTML.emptyState
 
     private let renderer = MarkdownToHTMLRenderer()
 
@@ -91,7 +98,7 @@ private struct AppPreviewView: View {
         }
         .frame(minWidth: 980, minHeight: 720)
         .onAppear {
-            autoLoadReadmeIfAvailable()
+            loadOpenedFileIfAvailable()
         }
         .onReceive(openDocumentState.$openedURL.compactMap { $0 }) { url in
             didCompleteQuickLookSetup = true
@@ -147,18 +154,9 @@ private struct AppPreviewView: View {
         }
     }
 
-    private func autoLoadReadmeIfAvailable() {
+    private func loadOpenedFileIfAvailable() {
         if let openedURL = openDocumentState.openedURL {
             loadSelectedFile(openedURL)
-            return
-        }
-
-        guard selectedFileURL == nil else { return }
-
-        let workingDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        let readme = workingDir.appendingPathComponent("README.md")
-        if FileManager.default.fileExists(atPath: readme.path) {
-            loadSelectedFile(readme)
         }
     }
 
@@ -248,6 +246,60 @@ private struct AppPreviewView: View {
             .replacingOccurrences(of: ">", with: "&gt;")
             .replacingOccurrences(of: "\"", with: "&quot;")
             .replacingOccurrences(of: "'", with: "&#39;")
+    }
+}
+
+private enum PreviewHTML {
+    static let emptyState = """
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          :root { color-scheme: light dark; }
+          body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: CanvasText;
+            background: Canvas;
+          }
+          main {
+            max-width: 460px;
+            padding: 28px;
+            text-align: center;
+          }
+          h1 {
+            margin: 0 0 10px;
+            font-size: 24px;
+            font-weight: 650;
+          }
+          p {
+            margin: 0;
+            color: color-mix(in srgb, CanvasText 70%, transparent);
+            line-height: 1.45;
+          }
+        </style>
+      </head>
+      <body>
+        <main>
+          <h1>Open a Markdown file</h1>
+          <p>Select a Markdown file in Finder, choose Open With > Markdown Preview, and this window will render it here.</p>
+        </main>
+      </body>
+    </html>
+    """
+}
+
+private enum HelpPresenter {
+    static func showHelp() {
+        let alert = NSAlert()
+        alert.messageText = "Markdown Preview"
+        alert.informativeText = "Markdown Preview adds rendered Quick Look previews for Markdown files. It also gives you a quick way to open an .md or .markdown file from Finder and view it in this app."
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 }
 
