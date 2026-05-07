@@ -69,6 +69,7 @@ private struct AppPreviewView: View {
     let binaryTime: Date?
 
     @EnvironmentObject private var openDocumentState: OpenDocumentState
+    @AppStorage("didCompleteQuickLookSetup") private var didCompleteQuickLookSetup = false
     @State private var selectedFileURL: URL?
     @State private var selectedFilePath: String = "No file selected"
     @State private var renderedHTML: String = "<html><body style='font: 15px -apple-system; padding:20px;'>Choose a Markdown file to preview.</body></html>"
@@ -76,6 +77,29 @@ private struct AppPreviewView: View {
     private let renderer = MarkdownToHTMLRenderer()
 
     var body: some View {
+        Group {
+            if didCompleteQuickLookSetup {
+                previewContent
+            } else {
+                QuickLookSetupView(
+                    onOpenSettings: openQuickLookSettings,
+                    onContinue: {
+                        didCompleteQuickLookSetup = true
+                    }
+                )
+            }
+        }
+        .frame(minWidth: 980, minHeight: 720)
+        .onAppear {
+            autoLoadReadmeIfAvailable()
+        }
+        .onReceive(openDocumentState.$openedURL.compactMap { $0 }) { url in
+            didCompleteQuickLookSetup = true
+            loadSelectedFile(url)
+        }
+    }
+
+    private var previewContent: some View {
         VStack(alignment: .leading, spacing: 12) {
 //            Text("Markdown Preview")
 //                .font(.title2).bold()
@@ -108,13 +132,6 @@ private struct AppPreviewView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .padding(20)
-        .frame(minWidth: 980, minHeight: 720)
-        .onAppear {
-            autoLoadReadmeIfAvailable()
-        }
-        .onReceive(openDocumentState.$openedURL.compactMap { $0 }) { url in
-            loadSelectedFile(url)
-        }
     }
 
     private func chooseFile() {
@@ -148,6 +165,21 @@ private struct AppPreviewView: View {
     private func reloadSelectedFile() {
         guard let url = selectedFileURL else { return }
         render(url: url)
+    }
+
+    private func openQuickLookSettings() {
+        let urls = [
+            "x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.quicklook.preview",
+            "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
+        ]
+
+        let didOpenSettings = urls.compactMap(URL.init(string:)).contains { NSWorkspace.shared.open($0) }
+        guard didOpenSettings else {
+            NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: "/System/Applications/System Settings.app"), configuration: .init())
+            return
+        }
+
+        didCompleteQuickLookSetup = true
     }
 
     private func loadSelectedFile(_ url: URL) {
@@ -216,6 +248,77 @@ private struct AppPreviewView: View {
             .replacingOccurrences(of: ">", with: "&gt;")
             .replacingOccurrences(of: "\"", with: "&quot;")
             .replacingOccurrences(of: "'", with: "&#39;")
+    }
+}
+
+private struct QuickLookSetupView: View {
+    let onOpenSettings: () -> Void
+    let onContinue: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer(minLength: 0)
+
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .frame(width: 64, height: 64)
+                        .accessibilityHidden(true)
+
+                    Text("Enable Markdown Preview")
+                        .font(.system(size: 30, weight: .semibold))
+
+                    Text("macOS requires you to enable new Quick Look extensions. Turn on Markdown Preview in System Settings to preview Markdown files from Finder with Space.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    SetupStep(number: 1, text: "Open System Settings")
+                    SetupStep(number: 2, text: "Go to General -> Login Items & Extensions -> Quick Look")
+                    SetupStep(number: 3, text: "Turn on Markdown Preview")
+                }
+
+                HStack(spacing: 12) {
+                    Button(action: onOpenSettings) {
+                        Label("Open System Settings", systemImage: "gearshape")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+
+                    Button("Continue") {
+                        onContinue()
+                    }
+                    .controlSize(.large)
+                }
+            }
+            .frame(maxWidth: 560, alignment: .leading)
+
+            Spacer(minLength: 0)
+        }
+        .padding(48)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+private struct SetupStep: View {
+    let number: Int
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text("\(number)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 22, height: 22)
+                .background(Circle().fill(Color.accentColor))
+
+            Text(text)
+                .font(.callout)
+        }
     }
 }
 

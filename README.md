@@ -74,9 +74,10 @@ Install the built app:
 make install
 ```
 
-If macOS asks, enable the extension in `System Settings`:
+Launch Markdown Preview and use the setup screen to open `System Settings`.
+Then enable the extension:
 
-`Privacy & Security` -> `Extensions` -> `Quick Look` -> `Markdown Preview`
+`General` -> `Login Items & Extensions` -> `Quick Look` -> `Markdown Preview`
 
 Then select a `.md` or `.markdown` file in Finder and press `Space`.
 
