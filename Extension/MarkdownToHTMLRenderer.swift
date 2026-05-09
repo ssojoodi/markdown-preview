@@ -450,9 +450,12 @@ final class MarkdownToHTMLRenderer {
     private func tableBlock(from lines: [String], at index: Int, baseURL: URL) -> (html: String, nextIndex: Int)? {
         guard index + 1 < lines.count else { return nil }
 
-        let header = splitTableRow(lines[index])
-        guard header.count >= 2 else { return nil }
-        guard let alignments = tableAlignments(from: lines[index + 1]), alignments.count == header.count else { return nil }
+        let headerLine = lines[index]
+        let separatorLine = lines[index + 1]
+        let header = splitTableRow(headerLine)
+        guard !header.isEmpty else { return nil }
+        guard header.count >= 2 || (containsUnescapedTablePipe(headerLine) && containsUnescapedTablePipe(separatorLine)) else { return nil }
+        guard let alignments = tableAlignments(from: separatorLine), alignments.count == header.count else { return nil }
 
         var rows: [[String]] = []
         var nextIndex = index + 2
@@ -465,7 +468,11 @@ final class MarkdownToHTMLRenderer {
             guard headingMatch(from: trimmed) == nil, !isThematicBreak(trimmed) else { break }
 
             let cells = splitTableRow(line)
-            guard cells.count >= 2 else { break }
+            if header.count == 1 {
+                guard containsUnescapedTablePipe(line), !cells.isEmpty else { break }
+            } else {
+                guard cells.count >= 2 else { break }
+            }
             rows.append(normalizedTableCells(cells, count: header.count))
             nextIndex += 1
         }
@@ -499,7 +506,12 @@ final class MarkdownToHTMLRenderer {
 
         for char in line {
             if isEscaped {
-                current.append(char)
+                if char == "|" {
+                    current.append(char)
+                } else {
+                    current.append("\\")
+                    current.append(char)
+                }
                 isEscaped = false
                 continue
             }
@@ -535,7 +547,7 @@ final class MarkdownToHTMLRenderer {
 
     private func tableAlignments(from line: String) -> [TableAlignment]? {
         let cells = splitTableRow(line)
-        guard cells.count >= 2 else { return nil }
+        guard !cells.isEmpty else { return nil }
 
         var alignments: [TableAlignment] = []
         for cell in cells {
@@ -554,6 +566,28 @@ final class MarkdownToHTMLRenderer {
         }
 
         return alignments
+    }
+
+    private func containsUnescapedTablePipe(_ line: String) -> Bool {
+        var isEscaped = false
+
+        for char in line {
+            if isEscaped {
+                isEscaped = false
+                continue
+            }
+
+            if char == "\\" {
+                isEscaped = true
+                continue
+            }
+
+            if char == "|" {
+                return true
+            }
+        }
+
+        return false
     }
 
     private func isTableSeparatorCell(_ cell: String) -> Bool {
