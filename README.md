@@ -10,6 +10,7 @@ After installing and enabling the app, select a Markdown file in Finder and pres
 - Paragraphs
 - Unordered and ordered lists
 - Blockquotes
+- Tables
 - Fenced code blocks (```)
 - Inline code, emphasis, strong emphasis, strikethrough
 - Links
