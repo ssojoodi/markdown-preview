@@ -10,10 +10,12 @@ struct RenderedPreview {
 final class MarkdownToHTMLRenderer {
     private var attachments: [String: QLPreviewReplyAttachment] = [:]
     private var attachmentCounter: Int = 0
+    private var hasMermaidDiagrams = false
 
     func render(markdown: String, baseURL: URL) -> RenderedPreview {
         attachments = [:]
         attachmentCounter = 0
+        hasMermaidDiagrams = false
 
         let normalized = markdown.replacingOccurrences(of: "\r\n", with: "\n")
         let lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -57,9 +59,14 @@ final class MarkdownToHTMLRenderer {
 
         func closeCodeBlockIfNeeded() {
             guard inCodeBlock else { return }
-            let languageClass = codeLanguage.isEmpty ? "" : " class=\"language-\(escapeHTML(codeLanguage))\""
             let codeText = escapeHTML(codeLines.joined(separator: "\n"))
-            body.append("<pre><code\(languageClass)>\(codeText)</code></pre>")
+            if isMermaidLanguage(codeLanguage) {
+                hasMermaidDiagrams = true
+                body.append("<div class=\"mermaid\">\(codeText)</div>")
+            } else {
+                let languageClass = codeLanguage.isEmpty ? "" : " class=\"language-\(escapeHTML(codeLanguage))\""
+                body.append("<pre><code\(languageClass)>\(codeText)</code></pre>")
+            }
             inCodeBlock = false
             codeLanguage = ""
             codeLines.removeAll(keepingCapacity: true)
@@ -167,12 +174,13 @@ final class MarkdownToHTMLRenderer {
         flushQuote()
         closeList()
 
-        let html = wrapDocument(body.joined(separator: "\n"))
+        let html = wrapDocument(body.joined(separator: "\n"), includesMermaid: hasMermaidDiagrams)
         return RenderedPreview(html: html, attachments: attachments)
     }
 
-    private func wrapDocument(_ body: String) -> String {
-        """
+    private func wrapDocument(_ body: String, includesMermaid: Bool) -> String {
+        let mermaidScript = includesMermaid ? mermaidScriptHTML() : ""
+        return """
         <!doctype html>
         <html>
         <head>
@@ -237,12 +245,60 @@ final class MarkdownToHTMLRenderer {
               color: #b04a3a;
               font-style: italic;
             }
+            .mermaid {
+              display: flex;
+              justify-content: center;
+              margin: 1.1em 0;
+              overflow-x: auto;
+            }
+            .mermaid svg {
+              max-width: 100%;
+              height: auto;
+            }
           </style>
         </head>
         <body>
         \(body)
+        \(mermaidScript)
         </body>
         </html>
+        """
+    }
+
+    private func mermaidScriptHTML() -> String {
+        guard let scriptURL = Bundle.main.url(forResource: "mermaid.min", withExtension: "js") else {
+            return ""
+        }
+        guard let mermaidSource = try? String(contentsOf: scriptURL, encoding: .utf8) else {
+            return ""
+        }
+
+        return """
+        <script>
+        \(mermaidSource)
+        </script>
+        <script>
+          (() => {
+            const renderMermaid = () => {
+              if (!window.mermaid) { return; }
+              const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+              window.mermaid.initialize({
+                startOnLoad: false,
+                securityLevel: "strict",
+                theme: isDark ? "dark" : "default"
+              });
+              window.mermaid.run({ querySelector: ".mermaid" }).catch((error) => {
+                console.error("Mermaid render failed", error);
+              });
+            };
+
+            if (document.readyState === "loading") {
+              document.addEventListener("DOMContentLoaded", renderMermaid);
+            } else {
+              renderMermaid();
+            }
+          })();
+        </script>
         """
     }
 
@@ -616,6 +672,16 @@ final class MarkdownToHTMLRenderer {
     private func isThematicBreak(_ line: String) -> Bool {
         let compact = line.replacingOccurrences(of: " ", with: "")
         return compact == "---" || compact == "***" || compact == "___"
+    }
+
+    private func isMermaidLanguage(_ language: String) -> Bool {
+        let firstToken = language
+            .trimmingCharacters(in: .whitespaces)
+            .split(separator: " ")
+            .first
+            .map(String.init) ?? ""
+        let normalized = firstToken.trimmingCharacters(in: CharacterSet(charactersIn: "{}")).lowercased()
+        return normalized == "mermaid"
     }
 
     private func escapeHTML(_ text: String) -> String {

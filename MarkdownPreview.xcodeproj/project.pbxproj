@@ -13,6 +13,7 @@
 		A10000040000000000000001 /* MarkdownPreviewExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A10000210000000000000001 /* MarkdownPreviewExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A10000050000000000000001 /* MarkdownToHTMLRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000130000000000000001 /* MarkdownToHTMLRenderer.swift */; };
 		A10000060000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000160000000000000001 /* Assets.xcassets */; };
+		A10000070000000000000001 /* mermaid.min.js in Resources */ = {isa = PBXBuildFile; fileRef = A10000190000000000000001 /* mermaid.min.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,6 +49,7 @@
 		A10000160000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000170000000000000001 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		A10000180000000000000001 /* LocalSigning.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LocalSigning.example.xcconfig; sourceTree = "<group>"; };
+		A10000190000000000000001 /* mermaid.min.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = mermaid.min.js; sourceTree = "<group>"; };
 		A10000200000000000000001 /* MarkdownPreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MarkdownPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000210000000000000001 /* MarkdownPreviewExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MarkdownPreviewExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -95,6 +97,7 @@
 			children = (
 				A10000120000000000000001 /* PreviewProvider.swift */,
 				A10000130000000000000001 /* MarkdownToHTMLRenderer.swift */,
+				A10000190000000000000001 /* mermaid.min.js */,
 				A10000150000000000000001 /* Info.plist */,
 			);
 			path = Extension;
@@ -207,6 +210,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000070000000000000001 /* mermaid.min.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
