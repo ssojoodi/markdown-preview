@@ -14,6 +14,7 @@
 		A10000050000000000000001 /* MarkdownToHTMLRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000130000000000000001 /* MarkdownToHTMLRenderer.swift */; };
 		A10000060000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000160000000000000001 /* Assets.xcassets */; };
 		A10000070000000000000001 /* mermaid.min.js in Resources */ = {isa = PBXBuildFile; fileRef = A10000190000000000000001 /* mermaid.min.js */; };
+		A10000080000000000000001 /* mermaid.min.js in Resources */ = {isa = PBXBuildFile; fileRef = A10000190000000000000001 /* mermaid.min.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -203,6 +204,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000060000000000000001 /* Assets.xcassets in Resources */,
+				A10000080000000000000001 /* mermaid.min.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
