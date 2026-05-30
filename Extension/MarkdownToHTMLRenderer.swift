@@ -266,7 +266,8 @@ final class MarkdownToHTMLRenderer {
     }
 
     private func mermaidScriptHTML() -> String {
-        guard let scriptURL = Bundle.main.url(forResource: "mermaid.min", withExtension: "js") else {
+        let resourceBundle = Bundle(for: MarkdownToHTMLRenderer.self)
+        guard let scriptURL = resourceBundle.url(forResource: "mermaid.min", withExtension: "js") else {
             return ""
         }
         guard let mermaidSource = try? String(contentsOf: scriptURL, encoding: .utf8) else {
