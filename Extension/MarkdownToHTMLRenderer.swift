@@ -26,7 +26,7 @@ final class MarkdownToHTMLRenderer {
         var codeLines: [String] = []
         var inCodeBlock = false
         var codeLanguage = ""
-        var listType: ListType = .none
+        var listStack: [ListContext] = []
         var index = 0
 
         func flushParagraph() {
@@ -45,16 +45,44 @@ final class MarkdownToHTMLRenderer {
             quoteLines.removeAll(keepingCapacity: true)
         }
 
-        func closeList() {
-            switch listType {
-            case .unordered:
-                body.append("</ul>")
-            case .ordered:
-                body.append("</ol>")
-            case .none:
-                break
+        func openList(type: ListType, indent: Int) {
+            body.append("<\(type.tagName)>")
+            listStack.append(ListContext(type: type, indent: indent, hasOpenItem: false))
+        }
+
+        func closeCurrentList() {
+            guard let current = listStack.popLast() else { return }
+            if current.hasOpenItem {
+                body.append("</li>")
             }
-            listType = .none
+            body.append("</\(current.type.tagName)>")
+        }
+
+        func closeLists() {
+            while !listStack.isEmpty {
+                closeCurrentList()
+            }
+        }
+
+        func renderListItem(_ item: ListItem) {
+            while let current = listStack.last, current.indent > item.indent {
+                closeCurrentList()
+            }
+
+            if let current = listStack.last, current.indent == item.indent, current.type != item.type {
+                closeCurrentList()
+            }
+
+            if listStack.isEmpty || listStack[listStack.count - 1].indent < item.indent {
+                openList(type: item.type, indent: item.indent)
+            }
+
+            if listStack[listStack.count - 1].hasOpenItem {
+                body.append("</li>")
+            }
+
+            body.append("<li>\(renderInline(item.content, baseURL: baseURL))")
+            listStack[listStack.count - 1].hasOpenItem = true
         }
 
         func closeCodeBlockIfNeeded() {
@@ -89,7 +117,7 @@ final class MarkdownToHTMLRenderer {
             if trimmed.hasPrefix("```") {
                 flushParagraph()
                 flushQuote()
-                closeList()
+                closeLists()
                 inCodeBlock = true
                 codeLanguage = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
                 index += 1
@@ -99,7 +127,7 @@ final class MarkdownToHTMLRenderer {
             if trimmed.isEmpty {
                 flushParagraph()
                 flushQuote()
-                closeList()
+                closeLists()
                 index += 1
                 continue
             }
@@ -107,7 +135,7 @@ final class MarkdownToHTMLRenderer {
             if let heading = headingMatch(from: trimmed) {
                 flushParagraph()
                 flushQuote()
-                closeList()
+                closeLists()
                 body.append("<h\(heading.level)>\(renderInline(heading.text, baseURL: baseURL))</h\(heading.level)>")
                 index += 1
                 continue
@@ -116,7 +144,7 @@ final class MarkdownToHTMLRenderer {
             if isThematicBreak(trimmed) {
                 flushParagraph()
                 flushQuote()
-                closeList()
+                closeLists()
                 body.append("<hr />")
                 index += 1
                 continue
@@ -124,7 +152,7 @@ final class MarkdownToHTMLRenderer {
 
             if let quote = quoteLine(from: line) {
                 flushParagraph()
-                closeList()
+                closeLists()
                 quoteLines.append(renderInline(quote, baseURL: baseURL))
                 index += 1
                 continue
@@ -134,37 +162,20 @@ final class MarkdownToHTMLRenderer {
 
             if let table = tableBlock(from: lines, at: index, baseURL: baseURL) {
                 flushParagraph()
-                closeList()
+                closeLists()
                 body.append(table.html)
                 index = table.nextIndex
                 continue
             }
 
-            if let unorderedItem = unorderedListItem(from: trimmed) {
+            if let item = listItem(from: line) {
                 flushParagraph()
-                if listType != .unordered {
-                    closeList()
-                    body.append("<ul>")
-                    listType = .unordered
-                }
-                body.append("<li>\(renderInline(unorderedItem, baseURL: baseURL))</li>")
+                renderListItem(item)
                 index += 1
                 continue
             }
 
-            if let orderedItem = orderedListItem(from: trimmed) {
-                flushParagraph()
-                if listType != .ordered {
-                    closeList()
-                    body.append("<ol>")
-                    listType = .ordered
-                }
-                body.append("<li>\(renderInline(orderedItem, baseURL: baseURL))</li>")
-                index += 1
-                continue
-            }
-
-            closeList()
+            closeLists()
             paragraphLines.append(trimmed)
             index += 1
         }
@@ -172,7 +183,7 @@ final class MarkdownToHTMLRenderer {
         closeCodeBlockIfNeeded()
         flushParagraph()
         flushQuote()
-        closeList()
+        closeLists()
 
         let html = wrapDocument(body.joined(separator: "\n"), includesMermaid: hasMermaidDiagrams)
         return RenderedPreview(html: html, attachments: attachments)
@@ -475,33 +486,62 @@ final class MarkdownToHTMLRenderer {
         return String(raw)
     }
 
-    private func unorderedListItem(from line: String) -> String? {
-        guard line.count >= 2 else { return nil }
-        let prefix = line.prefix(2)
+    private func listItem(from line: String) -> ListItem? {
+        let indent = leadingIndent(in: line)
+        let contentStart = line.index(line.startIndex, offsetBy: indent)
+        let markerText = String(line[contentStart...])
+
+        if let content = unorderedListItem(from: markerText) {
+            return ListItem(type: .unordered, indent: indent, content: content)
+        }
+        if let content = orderedListItem(from: markerText) {
+            return ListItem(type: .ordered, indent: indent, content: content)
+        }
+
+        return nil
+    }
+
+    private func leadingIndent(in line: String) -> Int {
+        var indent = 0
+        for character in line {
+            if character == " " {
+                indent += 1
+            } else if character == "\t" {
+                indent += 4
+            } else {
+                break
+            }
+        }
+        return indent
+    }
+
+    private func unorderedListItem(from markerText: String) -> String? {
+        guard markerText.count >= 2 else { return nil }
+        let prefix = markerText.prefix(2)
         if prefix == "- " || prefix == "* " || prefix == "+ " {
-            return String(line.dropFirst(2)).trimmingCharacters(in: .whitespaces)
+            return String(markerText.dropFirst(2)).trimmingCharacters(in: .whitespaces)
         }
         return nil
     }
 
-    private func orderedListItem(from line: String) -> String? {
+    private func orderedListItem(from markerText: String) -> String? {
         var numberEnd: String.Index?
-        for index in line.indices {
-            if line[index].isNumber {
-                numberEnd = line.index(after: index)
+        for index in markerText.indices {
+            if markerText[index].isNumber {
+                numberEnd = markerText.index(after: index)
                 continue
             }
             break
         }
 
         guard let endDigits = numberEnd else { return nil }
-        guard endDigits < line.endIndex, line[endDigits] == "." else { return nil }
+        guard endDigits < markerText.endIndex, markerText[endDigits] == "." else { return nil }
 
-        let afterDot = line.index(after: endDigits)
-        guard afterDot < line.endIndex, line[afterDot] == " " else { return nil }
+        let afterDot = markerText.index(after: endDigits)
+        guard afterDot < markerText.endIndex, markerText[afterDot] == " " else { return nil }
 
-        let contentStart = line.index(after: afterDot)
-        return String(line[contentStart...]).trimmingCharacters(in: .whitespaces)
+        let contentStart = markerText.index(after: afterDot)
+        return String(markerText[contentStart...]).trimmingCharacters(in: .whitespaces)
     }
 
     private func tableBlock(from lines: [String], at index: Int, baseURL: URL) -> (html: String, nextIndex: Int)? {
@@ -521,7 +561,7 @@ final class MarkdownToHTMLRenderer {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             guard !trimmed.isEmpty else { break }
             guard quoteLine(from: line) == nil else { break }
-            guard unorderedListItem(from: trimmed) == nil, orderedListItem(from: trimmed) == nil else { break }
+            guard listItem(from: line) == nil else { break }
             guard headingMatch(from: trimmed) == nil, !isThematicBreak(trimmed) else { break }
 
             let cells = splitTableRow(line)
@@ -730,9 +770,29 @@ final class MarkdownToHTMLRenderer {
 }
 
 private enum ListType {
-    case none
     case unordered
     case ordered
+
+    var tagName: String {
+        switch self {
+        case .unordered:
+            return "ul"
+        case .ordered:
+            return "ol"
+        }
+    }
+}
+
+private struct ListContext {
+    let type: ListType
+    let indent: Int
+    var hasOpenItem: Bool
+}
+
+private struct ListItem {
+    let type: ListType
+    let indent: Int
+    let content: String
 }
 
 private enum TableAlignment {
