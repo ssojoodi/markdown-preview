@@ -1,22 +1,44 @@
 import Foundation
-import QuickLookUI
-import UniformTypeIdentifiers
 
 struct RenderedPreview {
     let html: String
-    let attachments: [String: QLPreviewReplyAttachment]
+}
+
+enum MarkdownText {
+    static func load(from fileURL: URL) throws -> String {
+        let data = try Data(contentsOf: fileURL)
+
+        if let utf8 = String(data: data, encoding: .utf8) {
+            return utf8
+        }
+        if let utf16 = String(data: data, encoding: .utf16) {
+            return utf16
+        }
+        if let iso = String(data: data, encoding: .isoLatin1) {
+            return iso
+        }
+
+        throw NSError(
+            domain: "MarkdownPreview",
+            code: 1001,
+            userInfo: [NSLocalizedDescriptionKey: "Unsupported text encoding"]
+        )
+    }
+}
+
+enum HTML {
+    static func escape(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&#39;")
+    }
 }
 
 final class MarkdownToHTMLRenderer {
-    private var attachments: [String: QLPreviewReplyAttachment] = [:]
-    private var attachmentCounter: Int = 0
-    private var hasMermaidDiagrams = false
-
     func render(markdown: String, baseURL: URL) -> RenderedPreview {
-        attachments = [:]
-        attachmentCounter = 0
-        hasMermaidDiagrams = false
-
         let normalized = markdown.replacingOccurrences(of: "\r\n", with: "\n")
         let lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
@@ -28,6 +50,7 @@ final class MarkdownToHTMLRenderer {
         var codeLanguage = ""
         var listStack: [ListContext] = []
         var index = 0
+        var hasMermaidDiagrams = false
 
         func flushParagraph() {
             guard !paragraphLines.isEmpty else { return }
@@ -186,7 +209,7 @@ final class MarkdownToHTMLRenderer {
         closeLists()
 
         let html = wrapDocument(body.joined(separator: "\n"), includesMermaid: hasMermaidDiagrams)
-        return RenderedPreview(html: html, attachments: attachments)
+        return RenderedPreview(html: html)
     }
 
     private func wrapDocument(_ body: String, includesMermaid: Bool) -> String {
@@ -414,18 +437,11 @@ final class MarkdownToHTMLRenderer {
             return "<span class=\"missing-image\">[Missing image: \(escapeHTML(destination))]</span>"
         }
 
-        guard let data = try? Data(contentsOf: fileURL) else {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return "<span class=\"missing-image\">[Missing image: \(escapeHTML(destination))]</span>"
         }
 
-        // Prefer a file URL for WKWebView-backed previews.
         let src = escapeHTML(fileURL.absoluteString)
-        // Keep attachment support populated for potential data-based Quick Look paths.
-        let ext = fileURL.pathExtension.lowercased()
-        let contentType = UTType(filenameExtension: ext) ?? .data
-        attachmentCounter += 1
-        let cid = "img\(attachmentCounter)"
-        attachments[cid] = QLPreviewReplyAttachment(data: data, contentType: contentType)
         return "<img src=\"\(src)\" alt=\"\(escapeHTML(alt))\" />"
     }
 
@@ -726,12 +742,7 @@ final class MarkdownToHTMLRenderer {
     }
 
     private func escapeHTML(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "'", with: "&#39;")
+        HTML.escape(text)
     }
 
     private func findCharacter(_ character: Character, in chars: [Character], from start: Int) -> Int? {

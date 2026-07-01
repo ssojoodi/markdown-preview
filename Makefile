@@ -8,6 +8,7 @@ LOCAL_SIGNING_FLAGS := CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_T
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration $(CONFIGURATION) -destination '$(DESTINATION)'
 SWIFT_MODULE_CACHE := ./.build/ModuleCache
 SWIFT := swift -module-cache-path $(SWIFT_MODULE_CACHE)
+SWIFTC := swiftc -module-cache-path $(SWIFT_MODULE_CACHE)
 APP_NAME := MarkdownPreview.app
 BUILD_APP := $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)/$(APP_NAME)
 INSTALL_APP := /Applications/$(APP_NAME)
@@ -40,7 +41,7 @@ DMG_VOLUME_NAME := Markdown Preview
 DMG := $(DIST_DIR)/MarkdownPreview.dmg
 DMG_SCRIPT := scripts/create_dmg.sh
 
-.PHONY: assets build buildlocal dmg package package-local install uninstall rebuild refresh clean paths
+.PHONY: assets build buildlocal dmg package package-local install uninstall rebuild refresh test clean paths
 
 define run_build
 $(XCODEBUILD) -derivedDataPath $(DERIVED_DATA) clean build $(1)
@@ -51,6 +52,11 @@ build: assets
 
 buildlocal: assets
 	$(call run_build,$(LOCAL_SIGNING_FLAGS))
+
+test:
+	mkdir -p .build/TestBinaries .build/TestFixtures $(SWIFT_MODULE_CACHE)
+	$(SWIFTC) Extension/MarkdownToHTMLRenderer.swift scripts/test_renderer.swift -o .build/TestBinaries/renderer-tests
+	.build/TestBinaries/renderer-tests
 
 package:
 	$(MAKE) build CONFIGURATION=$(PACKAGE_CONFIGURATION)

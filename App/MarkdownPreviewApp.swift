@@ -1,18 +1,15 @@
 import SwiftUI
+import AppKit
 import WebKit
 
 @main
 struct MarkdownPreviewApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    private let launchTime = Date()
     @StateObject private var openDocumentState = OpenDocumentState.shared
 
     var body: some Scene {
         WindowGroup {
-            AppPreviewView(
-                launchTime: launchTime,
-                binaryTime: Self.binaryModificationDate()
-            )
+            AppPreviewView()
             .environmentObject(openDocumentState)
             .onOpenURL { url in
                 openDocumentState.open(url: url)
@@ -28,11 +25,6 @@ struct MarkdownPreviewApp: App {
         }
     }
 
-    private static func binaryModificationDate() -> Date? {
-        guard let executableURL = Bundle.main.executableURL else { return nil }
-        let values = try? executableURL.resourceValues(forKeys: [.contentModificationDateKey])
-        return values?.contentModificationDate
-    }
 }
 
 final class OpenDocumentState: ObservableObject {
@@ -72,14 +64,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 private struct AppPreviewView: View {
-    let launchTime: Date
-    let binaryTime: Date?
-
     @EnvironmentObject private var openDocumentState: OpenDocumentState
     @AppStorage("didCompleteQuickLookSetup") private var didCompleteQuickLookSetup = false
     @State private var selectedFileURL: URL?
     @State private var selectedFilePath: String = "No file selected"
     @State private var renderedHTML: String = PreviewHTML.emptyState
+    @State private var markdownText: String = ""
+    @State private var isDirty = false
+    @State private var isEditMode = false
 
     private let renderer = MarkdownToHTMLRenderer()
 
@@ -101,47 +93,92 @@ private struct AppPreviewView: View {
             loadOpenedFileIfAvailable()
         }
         .onReceive(openDocumentState.$openedURL.compactMap { $0 }) { url in
-            didCompleteQuickLookSetup = true
-            loadSelectedFile(url)
+            openDocument(url)
         }
     }
 
     private var previewContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-//            Text("Markdown Preview")
-//                .font(.title2).bold()
-//
-//            HStack(spacing: 10) {
-//                Button("Choose Markdown File") {
-//                    chooseFile()
-//                }
-//                Button("Reload") {
-//                    reloadSelectedFile()
-//                }
-//                .disabled(selectedFileURL == nil)
-//            }
-//
-//            Text("Selected: \(selectedFilePath)")
-//                .font(.system(.caption, design: .monospaced))
-//                .lineLimit(2)
-//
-//            HStack(spacing: 20) {
-//                Text("Launch timestamp: \(timestampString(from: launchTime))")
-//                    .font(.system(.caption, design: .monospaced))
-//                Text("Binary timestamp: \(timestampString(from: binaryTime))")
-//                    .font(.system(.caption, design: .monospaced))
-//            }
-//
-//            Divider()
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(selectedFileURL?.lastPathComponent ?? "No file selected")
+                        .font(.headline)
+                    Text(selectedFilePath)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
 
-            WebPreview(html: renderedHTML, baseURL: selectedFileURL?.deletingLastPathComponent())
-                .frame(minWidth: 840, minHeight: 540)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                Spacer()
+
+                HStack(spacing: 10) {
+                    Button {
+                        chooseFile()
+                    } label: {
+                        Image(systemName: "folder")
+                    }
+                    .buttonStyle(CircleIconButtonStyle())
+                    .help("Choose Markdown file")
+
+                    Button {
+                        reloadSelectedFile()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .buttonStyle(CircleIconButtonStyle())
+                    .help("Reload file")
+                    .disabled(selectedFileURL == nil)
+
+                    Button {
+                        toggleEditMode()
+                    } label: {
+                        Image(systemName: isEditMode ? "eye" : "pencil")
+                    }
+                    .buttonStyle(CircleIconButtonStyle())
+                    .help(isEditMode ? "Show preview" : "Edit Markdown")
+                    .disabled(selectedFileURL == nil)
+
+                    Button {
+                        _ = saveCurrentFile()
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .buttonStyle(CircleIconButtonStyle(isProminent: true))
+                    .help("Save changes")
+                    .keyboardShortcut("s", modifiers: .command)
+                    .disabled(selectedFileURL == nil || !isDirty)
+                }
+            }
+
+            if isDirty {
+                Text("Unsaved changes")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
+            Divider()
+
+            if isEditMode {
+                MarkdownEditor(
+                    text: $markdownText,
+                    isActive: isEditMode,
+                    onTextChange: {
+                        isDirty = true
+                    }
+                )
+                .frame(minWidth: 840, maxWidth: .infinity, minHeight: 540, maxHeight: .infinity)
+            } else {
+                WebPreview(html: renderedHTML, baseURL: selectedFileURL?.deletingLastPathComponent())
+                    .frame(minWidth: 840, maxWidth: .infinity, minHeight: 540, maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
         }
         .padding(20)
     }
 
     private func chooseFile() {
+        guard confirmDiscardingChangesIfNeeded() else { return }
+
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.plainText]
         panel.allowsMultipleSelection = false
@@ -156,13 +193,23 @@ private struct AppPreviewView: View {
 
     private func loadOpenedFileIfAvailable() {
         if let openedURL = openDocumentState.openedURL {
-            loadSelectedFile(openedURL)
+            openDocument(openedURL)
         }
     }
 
     private func reloadSelectedFile() {
         guard let url = selectedFileURL else { return }
-        render(url: url)
+        guard confirmDiscardingChangesIfNeeded() else { return }
+        isEditMode = false
+        loadSelectedFile(url)
+    }
+
+    private func toggleEditMode() {
+        if isEditMode, let selectedFileURL {
+            renderedHTML = renderer.render(markdown: markdownText, baseURL: selectedFileURL).html
+        }
+
+        isEditMode.toggle()
     }
 
     private func openQuickLookSettings() {
@@ -183,10 +230,12 @@ private struct AppPreviewView: View {
     private func loadSelectedFile(_ url: URL) {
         selectedFileURL = url
         selectedFilePath = url.path
-        render(url: url)
+        isDirty = false
+        isEditMode = false
+        loadMarkdownAndRender(from: url)
     }
 
-    private func render(url: URL) {
+    private func loadMarkdownAndRender(from url: URL) {
         let didAccess = url.startAccessingSecurityScopedResource()
         defer {
             if didAccess {
@@ -195,58 +244,90 @@ private struct AppPreviewView: View {
         }
 
         do {
-            let markdown = try loadText(from: url)
-            let rendered = renderer.render(markdown: markdown, baseURL: url)
-            renderedHTML = rendered.html
+            let markdown = try MarkdownText.load(from: url)
+            markdownText = markdown
+            renderedHTML = renderer.render(markdown: markdown, baseURL: url).html
         } catch {
+            isDirty = false
+            markdownText = ""
             renderedHTML = """
             <html>
               <body style='font:15px -apple-system; padding:20px;'>
-                <h3>Unable to render \(escapeHTML(url.lastPathComponent))</h3>
-                <p>\(escapeHTML(error.localizedDescription))</p>
+                <h3>Unable to render \(HTML.escape(url.lastPathComponent))</h3>
+                <p>\(HTML.escape(error.localizedDescription))</p>
               </body>
             </html>
             """
         }
     }
 
-    private func loadText(from fileURL: URL) throws -> String {
-        let data = try Data(contentsOf: fileURL)
-
-        if let utf8 = String(data: data, encoding: .utf8) {
-            return utf8
-        }
-        if let utf16 = String(data: data, encoding: .utf16) {
-            return utf16
-        }
-        if let iso = String(data: data, encoding: .isoLatin1) {
-            return iso
-        }
-
-        throw NSError(
-            domain: "MarkdownPreview",
-            code: 1001,
-            userInfo: [NSLocalizedDescriptionKey: "Unsupported text encoding"]
-        )
+    private func openDocument(_ url: URL) {
+        guard confirmDiscardingChangesIfNeeded() else { return }
+        didCompleteQuickLookSetup = true
+        loadSelectedFile(url)
     }
 
-    private func timestampString(from date: Date?) -> String {
-        guard let date else { return "Unavailable" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "America/Toronto")
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS zzz"
-        return formatter.string(from: date)
+    @discardableResult
+    private func saveCurrentFile() -> Bool {
+        guard let url = selectedFileURL else { return true }
+
+        guard let data = markdownText.data(using: .utf8) else {
+            showAlert(
+                title: "Unable to save \(url.lastPathComponent)",
+                message: "Cannot encode document with UTF-8."
+            )
+            return false
+        }
+
+        let didAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if didAccess {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        do {
+            try data.write(to: url, options: .atomic)
+            isDirty = false
+            renderedHTML = renderer.render(markdown: markdownText, baseURL: url).html
+            return true
+        } catch {
+            showAlert(
+                title: "Unable to save \(url.lastPathComponent)",
+                message: error.localizedDescription
+            )
+            return false
+        }
     }
 
-    private func escapeHTML(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "'", with: "&#39;")
+    private func confirmDiscardingChangesIfNeeded() -> Bool {
+        guard isDirty else { return true }
+
+        let alert = NSAlert()
+        alert.messageText = "Save changes to \(selectedFileURL?.lastPathComponent ?? "this document")?"
+        alert.informativeText = "Your edits will be lost if you continue without saving."
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Discard")
+        alert.addButton(withTitle: "Cancel")
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            return saveCurrentFile()
+        case .alertSecondButtonReturn:
+            return true
+        default:
+            return false
+        }
     }
+
+    private func showAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+    }
+
 }
 
 private enum PreviewHTML {
@@ -303,6 +384,57 @@ private enum HelpPresenter {
     }
 }
 
+private struct CircleIconButtonStyle: ButtonStyle {
+    var isProminent = false
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(foregroundColor)
+            .frame(width: 32, height: 32)
+            .background {
+                Circle()
+                    .fill(backgroundColor(isPressed: configuration.isPressed))
+            }
+            .overlay(
+                Circle()
+                    .stroke(borderColor, lineWidth: 1)
+            )
+            .clipShape(Circle())
+            .contentShape(Circle())
+            .opacity(isEnabled ? 1 : 0.45)
+    }
+
+    private var foregroundColor: Color {
+        if isProminent, isEnabled {
+            return .white
+        }
+
+        return .primary
+    }
+
+    private func backgroundColor(isPressed: Bool) -> some ShapeStyle {
+        if isProminent, isEnabled {
+            return AnyShapeStyle(Color.accentColor.opacity(isPressed ? 0.78 : 0.92))
+        }
+
+        return AnyShapeStyle(
+            Color(nsColor: .controlBackgroundColor)
+                .opacity(isPressed ? 0.72 : 1)
+        )
+    }
+
+    private var borderColor: Color {
+        if isProminent, isEnabled {
+            return Color.accentColor.opacity(0.55)
+        }
+
+        return Color(nsColor: .separatorColor).opacity(0.65)
+    }
+}
+
 private struct QuickLookSetupView: View {
     let onOpenSettings: () -> Void
     let onContinue: () -> Void
@@ -353,6 +485,86 @@ private struct QuickLookSetupView: View {
         .padding(48)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+private struct MarkdownEditor: NSViewRepresentable {
+    @Binding var text: String
+    let isActive: Bool
+    let onTextChange: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, onTextChange: onTextChange)
+    }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+
+        let textView = NSTextView(frame: .zero)
+        textView.delegate = context.coordinator
+        textView.string = text
+        textView.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        textView.isRichText = false
+        textView.importsGraphics = false
+        textView.isEditable = true
+        textView.isSelectable = true
+        textView.allowsUndo = true
+        textView.drawsBackground = true
+        textView.backgroundColor = NSColor.textBackgroundColor
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.minSize = NSSize(width: 0, height: scrollView.contentSize.height)
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = true
+        textView.isAutomaticSpellingCorrectionEnabled = true
+        textView.isAutomaticTextCompletionEnabled = true
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
+
+        scrollView.documentView = textView
+        context.coordinator.textView = textView
+
+        return scrollView
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = context.coordinator.textView else { return }
+        if textView.string != text {
+            textView.string = text
+        }
+
+        if isActive, textView.window?.firstResponder !== textView {
+            DispatchQueue.main.async {
+                textView.window?.makeFirstResponder(textView)
+            }
+        }
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        @Binding var text: String
+        let onTextChange: () -> Void
+        weak var textView: NSTextView?
+
+        init(text: Binding<String>, onTextChange: @escaping () -> Void) {
+            _text = text
+            self.onTextChange = onTextChange
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            if textView.string != text {
+                text = textView.string
+            }
+            onTextChange()
+        }
     }
 }
 
