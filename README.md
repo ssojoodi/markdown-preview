@@ -68,6 +68,30 @@ make package
 
 The generated disk image is written to `.build/Dist/MarkdownPreview.dmg`.
 
+## Release Outside The App Store
+
+Create a Developer ID signed, notarized, and stapled Release DMG:
+
+```bash
+xcrun notarytool store-credentials "sojoodi-macapp-notary" \
+  --team-id "YOURTEAMID" \
+  --apple-id "YOUR_APPLE_ID" \
+  --password "APP_SPECIFIC_PASSWORD"
+
+make release
+```
+
+`make release` reads `DEVELOPMENT_TEAM` from ignored `Config/LocalSigning.xcconfig` by default. You can override release settings without editing files:
+
+```bash
+make release \
+  DEVELOPER_ID_TEAM=YOURTEAMID \
+  DEVELOPER_ID_IDENTITY="Developer ID Application" \
+  NOTARY_PROFILE="sojoodi-macapp-notary"
+```
+
+The generated notarized disk image is written to `.build/Dist/MarkdownPreview.dmg`.
+
 ## Install And Enable
 
 Install the built app:
