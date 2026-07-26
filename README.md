@@ -36,12 +36,6 @@ Markdown Preview uses a lightweight built-in renderer. It is not a full CommonMa
 
 This must be set up once in Xcode.
 
-For local compile/run checks without an Apple Developer certificate, use the ad-hoc local build target:
-
-```bash
-make buildlocal
-```
-
 ## Build And Run
 
 Open `MarkdownPreview.xcodeproj` in Xcode, select the `MarkdownPreview` scheme, and run it.
@@ -57,16 +51,6 @@ To regenerate brand PNGs and app icon images from SVG sources:
 ```bash
 make assets
 ```
-
-## Package A DMG
-
-Create a Release DMG with a drag-to-Applications installer window:
-
-```bash
-make package
-```
-
-The generated disk image is written to `.build/Dist/MarkdownPreview.dmg`.
 
 ## Release Outside The App Store
 
@@ -119,6 +103,12 @@ If Finder still shows plain text, refresh Quick Look:
 
 ```bash
 make refresh
+```
+
+If double-clicking Markdown files opens an old build or archived copy of the app, reset the local file handlers:
+
+```bash
+make fix-file-handlers
 ```
 
 ## Registered UTTypes
