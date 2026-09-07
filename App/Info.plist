@@ -59,7 +59,7 @@
             <key>CFBundleTypeName</key>
             <string>Markdown Document</string>
             <key>CFBundleTypeRole</key>
-            <string>Viewer</string>
+            <string>Editor</string>
             <key>CFBundleTypeExtensions</key>
             <array>
                 <string>md</string>

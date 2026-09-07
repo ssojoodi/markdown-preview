@@ -26,7 +26,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController, WKN
         didCompleteCurrentRequest = false
 
         do {
-            let markdown = try Self.loadText(from: url)
+            let markdown = try MarkdownText.load(from: url)
             let rendered = renderer.render(markdown: markdown, baseURL: url)
             webView.loadHTMLString(rendered.html, baseURL: url.deletingLastPathComponent())
         } catch {
@@ -67,28 +67,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController, WKN
         completionHandler?(error)
     }
 
-    private static func loadText(from fileURL: URL) throws -> String {
-        let data = try Data(contentsOf: fileURL)
-
-        if let utf8 = String(data: data, encoding: .utf8) {
-            return utf8
-        }
-        if let utf16 = String(data: data, encoding: .utf16) {
-            return utf16
-        }
-        if let iso = String(data: data, encoding: .isoLatin1) {
-            return iso
-        }
-
-        throw NSError(
-            domain: "MarkdownPreviewExtension",
-            code: 1001,
-            userInfo: [NSLocalizedDescriptionKey: "Unsupported text encoding"]
-        )
-    }
-
     private static func errorHTML(error: Error) -> String {
-        let message = escapeHTML(error.localizedDescription)
+        let message = HTML.escape(error.localizedDescription)
         return """
         <!doctype html>
         <html>
@@ -98,14 +78,5 @@ final class PreviewViewController: NSViewController, QLPreviewingController, WKN
         </body>
         </html>
         """
-    }
-
-    private static func escapeHTML(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "'", with: "&#39;")
     }
 }
