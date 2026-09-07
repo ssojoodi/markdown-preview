@@ -89,6 +89,7 @@ private struct AppPreviewView: View {
     @State private var isShowingRichTextConverter = false
     @State private var isUntitledDocument = false
     @State private var handledNewDocumentRequestCount = 0
+    @State private var isAdvancedOptionsExpanded = false
 
     private let renderer = MarkdownToHTMLRenderer()
 
@@ -121,82 +122,7 @@ private struct AppPreviewView: View {
 
     private var previewContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(documentTitle)
-                        .font(.headline)
-                    Text(selectedFilePath)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                HStack(spacing: 10) {
-                    Button {
-                        createNewDocument()
-                    } label: {
-                        Image(systemName: "doc.badge.plus")
-                    }
-                    .buttonStyle(CircleIconButtonStyle())
-                    .help("New Markdown file")
-
-                    Button {
-                        chooseFile()
-                    } label: {
-                        Image(systemName: "folder")
-                    }
-                    .buttonStyle(CircleIconButtonStyle())
-                    .help("Choose Markdown file")
-
-                    Button {
-                        reloadSelectedFile()
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .buttonStyle(CircleIconButtonStyle())
-                    .help("Reload file")
-                    .disabled(selectedFileURL == nil)
-
-                    Button {
-                        toggleEditMode()
-                    } label: {
-                        Image(systemName: isEditMode ? "eye" : "pencil")
-                    }
-                    .buttonStyle(CircleIconButtonStyle())
-                    .help(isEditMode ? "Show preview" : "Edit Markdown")
-                    .disabled(!canEdit)
-
-                    if isEditMode {
-                        Button {
-                            isShowingRichTextConverter = true
-                        } label: {
-                            Image(systemName: "doc.richtext")
-                        }
-                        .buttonStyle(CircleIconButtonStyle())
-                        .help("Convert rich text to Markdown")
-                    }
-
-                    Button {
-                        _ = saveCurrentFile()
-                    } label: {
-                        Image(systemName: "square.and.arrow.down")
-                    }
-                    .buttonStyle(CircleIconButtonStyle(isProminent: true))
-                    .help("Save changes")
-                    .keyboardShortcut("s", modifiers: .command)
-                    .disabled(!canSave)
-                }
-            }
-
-            if isDirty {
-                Text("Unsaved changes")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            }
-
-            Divider()
+            advancedOptions
 
             if isEditMode {
                 MarkdownEditor(
@@ -216,6 +142,98 @@ private struct AppPreviewView: View {
         .padding(20)
         .sheet(isPresented: $isShowingRichTextConverter) {
             RichTextMarkdownConverterSheet()
+        }
+    }
+
+    private var advancedOptions: some View {
+        HStack(spacing: 10) {
+            if isAdvancedOptionsExpanded {
+                if selectedFileURL != nil {
+                    Button {
+                        copySelectedFilePath()
+                    } label: {
+                        Image(systemName: "info.circle")
+                    }
+                    .buttonStyle(CircleIconButtonStyle())
+                    .help(selectedFilePath)
+                    .transition(.opacity)
+                }
+
+                Spacer()
+
+                advancedActionButtons
+                    .transition(.opacity)
+            } else {
+                Spacer()
+            }
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    isAdvancedOptionsExpanded.toggle()
+                }
+            } label: {
+                Image(systemName: "slider.horizontal.3")
+            }
+            .buttonStyle(CircleIconButtonStyle(isActive: isAdvancedOptionsExpanded))
+            .help(isAdvancedOptionsExpanded ? "Hide advanced options" : "Show advanced options")
+        }
+    }
+
+    private var advancedActionButtons: some View {
+        HStack(spacing: 10) {
+            Button {
+                createNewDocument()
+            } label: {
+                Image(systemName: "doc.badge.plus")
+            }
+            .buttonStyle(CircleIconButtonStyle())
+            .help("New Markdown file")
+
+            Button {
+                chooseFile()
+            } label: {
+                Image(systemName: "folder")
+            }
+            .buttonStyle(CircleIconButtonStyle())
+            .help("Choose Markdown file")
+
+            Button {
+                reloadSelectedFile()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+            }
+            .buttonStyle(CircleIconButtonStyle())
+            .help("Reload file")
+            .disabled(selectedFileURL == nil)
+
+            Button {
+                toggleEditMode()
+            } label: {
+                Image(systemName: isEditMode ? "eye" : "pencil")
+            }
+            .buttonStyle(CircleIconButtonStyle())
+            .help(isEditMode ? "Show preview" : "Edit Markdown")
+            .disabled(!canEdit)
+
+            if isEditMode {
+                Button {
+                    isShowingRichTextConverter = true
+                } label: {
+                    Image(systemName: "doc.richtext")
+                }
+                .buttonStyle(CircleIconButtonStyle())
+                .help("Convert rich text to Markdown")
+            }
+
+            Button {
+                _ = saveCurrentFile()
+            } label: {
+                Image(systemName: "square.and.arrow.down")
+            }
+            .buttonStyle(CircleIconButtonStyle(isProminent: true))
+            .help("Save changes")
+            .keyboardShortcut("s", modifiers: .command)
+            .disabled(!canSave)
         }
     }
 
@@ -249,6 +267,7 @@ private struct AppPreviewView: View {
         isDirty = false
         isEditMode = true
         isUntitledDocument = true
+        isAdvancedOptionsExpanded = true
         didCompleteQuickLookSetup = true
     }
 
@@ -280,6 +299,12 @@ private struct AppPreviewView: View {
         loadSelectedFile(url)
     }
 
+    private func copySelectedFilePath() {
+        guard let path = selectedFileURL?.path else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(path, forType: .string)
+    }
+
     private func toggleEditMode() {
         if isEditMode {
             renderedHTML = renderer.render(markdown: markdownText, baseURL: renderBaseFileURL).html
@@ -309,6 +334,7 @@ private struct AppPreviewView: View {
         isUntitledDocument = false
         isDirty = false
         isEditMode = false
+        isAdvancedOptionsExpanded = false
         loadMarkdownAndRender(from: url)
     }
 
@@ -480,6 +506,7 @@ private enum HelpPresenter {
 
 private struct CircleIconButtonStyle: ButtonStyle {
     var isProminent = false
+    var isActive = false
 
     @Environment(\.isEnabled) private var isEnabled
 
@@ -506,12 +533,20 @@ private struct CircleIconButtonStyle: ButtonStyle {
             return .white
         }
 
+        if isActive, isEnabled {
+            return .accentColor
+        }
+
         return .primary
     }
 
     private func backgroundColor(isPressed: Bool) -> some ShapeStyle {
         if isProminent, isEnabled {
             return AnyShapeStyle(Color.accentColor.opacity(isPressed ? 0.78 : 0.92))
+        }
+
+        if isActive, isEnabled {
+            return AnyShapeStyle(Color.accentColor.opacity(isPressed ? 0.15 : 0.1))
         }
 
         return AnyShapeStyle(
@@ -523,6 +558,10 @@ private struct CircleIconButtonStyle: ButtonStyle {
     private var borderColor: Color {
         if isProminent, isEnabled {
             return Color.accentColor.opacity(0.55)
+        }
+
+        if isActive, isEnabled {
+            return Color.accentColor.opacity(0.3)
         }
 
         return Color(nsColor: .separatorColor).opacity(0.65)
