@@ -1,10 +1,40 @@
 # Markdown Preview
 
-Markdown Preview is a macOS Quick Look preview extension for Markdown files.
+Markdown Preview lets you read Markdown files with formatted text, tables, images, and Mermaid diagrams on your Mac. Preview files directly in Finder, or open the app to read, edit, and create Markdown.
 
 After installing and enabling the app, select a Markdown file in Finder and press `Space` to see a rendered preview.
 
-## What It Supports
+## Install and Try It
+
+Requires **macOS 13.0 or newer**. You do not need Xcode to use a packaged app.
+
+1. Open the `MarkdownPreview.dmg` supplied with your build and drag **MarkdownPreview** into **Applications**.
+2. Launch Markdown Preview from Applications and click **Open System Settings**.
+3. Enable Markdown Preview under **General → Login Items & Extensions → Quick Look**. The location and labels can vary by macOS version.
+4. Return to the app and click **Show Sample in Finder**. With `Welcome.md` selected, press **Space**.
+5. Check that you see a formatted heading, a table, and a diagram. Close the preview, return to the app, and click **The Preview Works**.
+
+You can choose **Set Up Later** to use the app immediately. To return to setup, expand **Show advanced options** (the sliders icon), then click **Quick Look setup** (the gear icon).
+
+If you only have the source code, see [Developer Guide](#developer-guide) to build the app.
+
+## Use Markdown Preview
+
+- **Preview in Finder:** select a `.md` or `.markdown` file and press **Space**.
+- **Open in the app:** use Finder’s **Open With → MarkdownPreview**, or expand the app’s advanced options and click the folder icon.
+- **Edit:** expand advanced options and click the pencil. Click the eye to preview your edits, and the save icon to save. Unsaved edits trigger a Save / Discard / Cancel prompt when closing, quitting, or switching files.
+- **Create a file:** choose **File → New Markdown File** or press **⌘N**. Save to choose a filename and location.
+- **Convert rich text:** while editing, click **Convert rich text to Markdown**, paste formatted text into the Rich Text pane, then click **Copy Markdown**. Click **Done** and paste the result into your document.
+
+### If Finder Shows Plain Text
+
+Check that the Quick Look extension is enabled in System Settings. Close the preview and press Space again. If it still does not render, try quitting and reopening Markdown Preview, then log out and back in if necessary. You can reopen **Quick Look setup** from advanced options to try the sample again.
+
+### Remove the App
+
+Quit Markdown Preview, turn off its Quick Look extension in System Settings, and move MarkdownPreview from Applications to the Trash. Your Markdown documents remain where you saved them.
+
+## Supported Markdown
 
 - Headings (`#` through `######`)
 - Paragraphs
@@ -19,12 +49,16 @@ After installing and enabling the app, select a Markdown file in Finder and pres
 
 Markdown Preview uses a lightweight built-in renderer. It is not a full CommonMark or GitHub Flavored Markdown implementation.
 
-## Requirements
+## Developer Guide
+
+The sections below cover building, signing, packaging, and troubleshooting development installations.
+
+### Requirements
 
 - macOS 13.0 or newer
 - Full Xcode app, not only Command Line Tools
 
-## Project Layout
+### Project Layout
 
 - `App/`: host macOS app used to install and contain the extension
 - `Extension/`: Quick Look preview extension implementation
@@ -32,11 +66,11 @@ Markdown Preview uses a lightweight built-in renderer. It is not a full CommonMa
 - `Config/`: shared and local signing configuration
 - `MarkdownPreview.xcodeproj/`: Xcode project with the app and extension targets
 
-## Signing
+### Signing
 
 This must be set up once in Xcode.
 
-## Build And Run
+### Build And Run
 
 Open `MarkdownPreview.xcodeproj` in Xcode, select the `MarkdownPreview` scheme, and run it.
 
@@ -46,13 +80,15 @@ You can also build from Terminal:
 make build
 ```
 
+Run the renderer checks with `make test`. Before distributing a build, follow the [manual release checks](Tests/manual-release-checks.md) for document safety and first-time setup.
+
 To regenerate brand PNGs and app icon images from SVG sources:
 
 ```bash
 make assets
 ```
 
-## Release Outside The App Store
+### Release Outside The App Store
 
 Create a Developer ID signed, notarized, and stapled Release DMG:
 
@@ -76,7 +112,7 @@ make release \
 
 The generated notarized disk image is written to `.build/Dist/MarkdownPreview.dmg`.
 
-## Install And Enable
+### Install a Development Build
 
 Install the built app:
 
@@ -97,7 +133,7 @@ To uninstall the app and disable its Quick Look extension:
 make uninstall
 ```
 
-## Refresh Quick Look
+### Refresh Quick Look
 
 If Finder still shows plain text, refresh Quick Look:
 
@@ -111,7 +147,7 @@ If double-clicking Markdown files opens an old build or archived copy of the app
 make fix-file-handlers
 ```
 
-## Registered UTTypes
+### Registered UTTypes
 
 - `com.sojoodi.markdown`
 - `public.markdown`

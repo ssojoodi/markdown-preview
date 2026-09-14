@@ -56,6 +56,14 @@ final class OpenDocumentState: ObservableObject {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        for guardView in DocumentWindowGuardView.active.allObjects {
+            guardView.window?.makeKeyAndOrderFront(nil)
+            if !guardView.confirmClose() { return .terminateCancel }
+        }
+        return .terminateNow
+    }
+
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
         OpenDocumentState.shared.open(url: url)
@@ -90,23 +98,31 @@ private struct AppPreviewView: View {
     @State private var isUntitledDocument = false
     @State private var handledNewDocumentRequestCount = 0
     @State private var isAdvancedOptionsExpanded = false
+    @State private var isSetupDeferred = false
+    @State private var isShowingSetup = false
 
     private let renderer = MarkdownToHTMLRenderer()
 
     var body: some View {
         Group {
-            if didCompleteQuickLookSetup {
+            if !isShowingSetup && (didCompleteQuickLookSetup || isSetupDeferred) {
                 previewContent
             } else {
                 QuickLookSetupView(
                     onOpenSettings: openQuickLookSettings,
-                    onContinue: {
+                    onConfirm: {
                         didCompleteQuickLookSetup = true
+                        isShowingSetup = false
+                    },
+                    onSkip: {
+                        isSetupDeferred = true
+                        isShowingSetup = false
                     }
                 )
             }
         }
         .frame(minWidth: 980, minHeight: 720)
+        .background(DocumentWindowGuard(isDirty: isDirty, confirmClose: confirmDiscardingChangesIfNeeded))
         .onAppear {
             loadOpenedFileIfAvailable()
         }
@@ -181,6 +197,14 @@ private struct AppPreviewView: View {
 
     private var advancedActionButtons: some View {
         HStack(spacing: 10) {
+            Button {
+                isShowingSetup = true
+            } label: {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(CircleIconButtonStyle())
+            .help("Quick Look setup")
+
             Button {
                 createNewDocument()
             } label: {
@@ -268,7 +292,8 @@ private struct AppPreviewView: View {
         isEditMode = true
         isUntitledDocument = true
         isAdvancedOptionsExpanded = true
-        didCompleteQuickLookSetup = true
+        isSetupDeferred = true
+        isShowingSetup = false
     }
 
     private func chooseFile() {
@@ -325,7 +350,6 @@ private struct AppPreviewView: View {
             return
         }
 
-        didCompleteQuickLookSetup = true
     }
 
     private func loadSelectedFile(_ url: URL) {
@@ -366,7 +390,8 @@ private struct AppPreviewView: View {
 
     private func openDocument(_ url: URL) {
         guard confirmDiscardingChangesIfNeeded() else { return }
-        didCompleteQuickLookSetup = true
+        isSetupDeferred = true
+        isShowingSetup = false
         loadSelectedFile(url)
     }
 
@@ -570,7 +595,10 @@ private struct CircleIconButtonStyle: ButtonStyle {
 
 private struct QuickLookSetupView: View {
     let onOpenSettings: () -> Void
-    let onContinue: () -> Void
+    let onConfirm: () -> Void
+    let onSkip: () -> Void
+    @State private var didRevealSample = false
+    @State private var sampleError: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -596,6 +624,7 @@ private struct QuickLookSetupView: View {
                     SetupStep(number: 1, text: "Open System Settings")
                     SetupStep(number: 2, text: "Go to General -> Login Items & Extensions -> Quick Look")
                     SetupStep(number: 3, text: "Turn on Markdown Preview")
+                    SetupStep(number: 4, text: "Show the sample in Finder, then press Space. Look for a formatted heading, a table, and a diagram.")
                 }
 
                 HStack(spacing: 12) {
@@ -605,10 +634,22 @@ private struct QuickLookSetupView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
 
-                    Button("Continue") {
-                        onContinue()
-                    }
+                    Button("Show Sample in Finder", action: revealSample)
                     .controlSize(.large)
+                }
+
+                Text("If you still see plain text, check that the extension is enabled, close Quick Look, and press Space again. Settings labels may vary by macOS version.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                if let sampleError {
+                    Text(sampleError).foregroundStyle(.red)
+                }
+
+                HStack(spacing: 12) {
+                    Button("The Preview Works", action: onConfirm)
+                        .disabled(!didRevealSample)
+                    Button("Set Up Later", action: onSkip)
                 }
             }
             .frame(maxWidth: 560, alignment: .leading)
@@ -618,6 +659,98 @@ private struct QuickLookSetupView: View {
         .padding(48)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private func revealSample() {
+        do {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("MarkdownPreview-Setup", isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let url = directory.appendingPathComponent("Welcome.md")
+            let sample = """
+            # Your Markdown preview works!
+
+            This sentence has **bold text** and *italic text*.
+
+            | Feature | Preview |
+            | --- | --- |
+            | Tables | Organized into rows and columns |
+            | Diagrams | Drawn below |
+
+            ```mermaid
+            graph LR
+                A[Select a Markdown file] --> B[Press Space]
+                B --> C[Read your preview]
+            ```
+            """
+            try sample.write(to: url, atomically: true, encoding: .utf8)
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+            didRevealSample = true
+            sampleError = nil
+        } catch {
+            sampleError = "Unable to create the sample: \(error.localizedDescription)"
+        }
+    }
+}
+
+// Forward SwiftUI's window delegate methods while intercepting user-initiated closes.
+private struct DocumentWindowGuard: NSViewRepresentable {
+    let isDirty: Bool
+    let confirmClose: () -> Bool
+
+    func makeNSView(context: Context) -> DocumentWindowGuardView {
+        let view = DocumentWindowGuardView()
+        view.confirmClose = confirmClose
+        return view
+    }
+
+    func updateNSView(_ view: DocumentWindowGuardView, context: Context) {
+        view.confirmClose = confirmClose
+        view.window?.isDocumentEdited = isDirty
+    }
+
+    static func dismantleNSView(_ view: DocumentWindowGuardView, coordinator: ()) {
+        view.detach()
+    }
+}
+
+private final class DocumentWindowGuardView: NSView, NSWindowDelegate {
+    static let active = NSHashTable<DocumentWindowGuardView>.weakObjects()
+    var confirmClose: () -> Bool = { true }
+    private weak var guardedWindow: NSWindow?
+    private weak var originalDelegate: NSWindowDelegate?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        detach()
+        guard let window else { return }
+        guardedWindow = window
+        originalDelegate = window.delegate
+        window.delegate = self
+        Self.active.add(self)
+    }
+
+    func detach() {
+        if let window = guardedWindow, window.delegate === self {
+            window.delegate = originalDelegate
+        }
+        Self.active.remove(self)
+        guardedWindow = nil
+        originalDelegate = nil
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard confirmClose() else { return false }
+        return originalDelegate?.windowShouldClose?(sender) ?? true
+    }
+
+    override func responds(to selector: Selector!) -> Bool {
+        super.responds(to: selector) || (originalDelegate?.responds(to: selector) ?? false)
+    }
+
+    override func forwardingTarget(for selector: Selector!) -> Any? {
+        if originalDelegate?.responds(to: selector) == true { return originalDelegate }
+        return super.forwardingTarget(for: selector)
     }
 }
 
@@ -1063,10 +1196,11 @@ private enum RichTextMarkdownConverter {
             "| " + row.prefix(columnCount).map(escapeTableCell).joined(separator: " | ") + " |"
         }
 
-        return ([
+        let headerRows: [String] = [
             "| " + header.joined(separator: " | ") + " |",
             "| " + separator.joined(separator: " | ") + " |"
-        ] + bodyRows).joined(separator: "\n")
+        ]
+        return (headerRows + bodyRows).joined(separator: "\n")
     }
 
     private static func listMarkdown(tag: String, html: String) -> String {
