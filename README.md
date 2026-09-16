@@ -1,5 +1,9 @@
 # Markdown Preview
 
+Current release: **v.20260915** (macOS bundle version `2026.9.15`, build `1`).
+
+Quick Look setup completion is saved per release. A new release shows setup again on a normal app launch; opening a document bypasses setup for that session. Reinstalling the same release preserves completion. Setup is always available from the advanced toolbar's gear button.
+
 Markdown Preview lets you read Markdown files with formatted text, tables, images, and Mermaid diagrams on your Mac. Preview files directly in Finder, or open the app to read, edit, and create Markdown.
 
 After installing and enabling the app, select a Markdown file in Finder and press `Space` to see a rendered preview.
@@ -11,10 +15,10 @@ Requires **macOS 13.0 or newer**. You do not need Xcode to use a packaged app.
 1. Open the `MarkdownPreview.dmg` supplied with your build and drag **MarkdownPreview** into **Applications**.
 2. Launch Markdown Preview from Applications and click **Open System Settings**.
 3. Enable Markdown Preview under **General → Login Items & Extensions → Quick Look**. The location and labels can vary by macOS version.
-4. Return to the app and click **Show Sample in Finder**. With `Welcome.md` selected, press **Space**.
-5. Check that you see a formatted heading, a table, and a diagram. Close the preview, return to the app, and click **The Preview Works**.
+4. Return to the app and click **Save Sample…**, then choose a folder such as Documents. Finder reveals the saved `Welcome.md`; press **Space**.
+5. Check that you see a formatted heading, a table, and a diagram. Close the preview, return to the app, and click **Complete Setup**.
 
-You can choose **Set Up Later** to use the app immediately. To return to setup, expand **Show advanced options** (the sliders icon), then click **Quick Look setup** (the gear icon).
+You can choose **Close** to use the app immediately without marking setup complete. To return to setup, expand **Show advanced options** (the sliders icon), then click **Quick Look setup** (the gear icon). Once setup is complete, the setup page shows only **Close** at the bottom.
 
 If you only have the source code, see [Developer Guide](#developer-guide) to build the app.
 

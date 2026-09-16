@@ -19,9 +19,11 @@ Repeat for an existing file and a new document with text:
 
 1. Use a fresh macOS user account, install the DMG into Applications, and launch the app.
 2. Click Open System Settings and return without enabling the extension. Setup must remain visible, including after relaunching.
-3. Enable the extension and click Show Sample in Finder. Finder must select Welcome.md. Press Space and verify the formatted heading, table, and Mermaid diagram.
-4. Return and click The Preview Works. Relaunch; setup must remain completed.
-5. Reopen Quick Look setup from the advanced options gear. Confirm the sample can be revealed again without changing the open document or its edits.
-6. On a fresh account, choose Set Up Later. The app must be usable, setup must return on the next launch, and the gear must let you return immediately.
+3. Enable the extension and click Save Sample. Choose Documents in the save panel. Finder must select the saved Welcome.md. Press Space and verify the formatted heading, table, and Mermaid diagram. Canceling the save panel must leave setup open without an error or a new file.
+4. Return and click Complete Setup. Relaunch; setup must remain completed. Confirm that completing setup does not require revealing the sample first.
+5. Reopen Quick Look setup from the advanced options gear. Confirm the sample can be revealed again without changing the open document or its edits. Only Close should appear at the bottom; clicking it or pressing Escape must return to the document.
+6. On a fresh account, choose Close. The app must be usable, setup must return on the next launch, and the gear must let you return immediately.
 7. Before confirming setup, open a Markdown file through Finder or create one with Command-N. This must allow using the app without permanently marking setup complete.
 8. Preview one of your own Markdown files in Finder and open it in the app. Check local images and diagrams in both places.
+9. After completing setup, install a build with a newer release version and launch the app directly. Setup must appear again. Complete setup and relaunch; it must stay completed for that version.
+10. Reinstall the same release after completing setup. Completion should persist; the advanced toolbar gear must still reopen setup. Preferences saved by the older boolean-based setup flow must not suppress setup for the first versioned release.

@@ -8,27 +8,33 @@ final class PreviewViewController: NSViewController, QLPreviewingController, WKN
     private let webView = WKWebView(frame: .zero)
     private let renderer = MarkdownToHTMLRenderer()
     private var pendingCompletionHandler: ((Error?) -> Void)?
-    private var didCompleteCurrentRequest = false
+    private var pendingNavigation: WKNavigation?
 
     override func loadView() {
         view = webView
         webView.navigationDelegate = self
         webView.setValue(false, forKey: "drawsBackground")
-        webView.loadHTMLString(
-            "<html><body style='font:16px -apple-system; padding: 24px;'>Loading Markdown preview...</body></html>",
-            baseURL: nil
-        )
     }
 
     @objc(preparePreviewOfFileAtURL:completionHandler:)
     func preparePreviewOfFile(at url: URL, completionHandler: @escaping (Error?) -> Void) {
+        // Quick Look can request content before loading the controller's view.
+        _ = view
+        finishPreviewPreparation(NSError(domain: NSURLErrorDomain, code: NSURLErrorCancelled))
+        webView.stopLoading()
         pendingCompletionHandler = completionHandler
-        didCompleteCurrentRequest = false
 
         do {
             let markdown = try MarkdownText.load(from: url)
             let rendered = renderer.render(markdown: markdown, baseURL: url)
-            webView.loadHTMLString(rendered.html, baseURL: url.deletingLastPathComponent())
+            pendingNavigation = webView.loadHTMLString(rendered.html, baseURL: url.deletingLastPathComponent())
+            if pendingNavigation == nil {
+                finishPreviewPreparation(NSError(
+                    domain: "MarkdownPreviewExtension",
+                    code: 1003,
+                    userInfo: [NSLocalizedDescriptionKey: "Unable to start loading the preview."]
+                ))
+            }
         } catch {
             webView.loadHTMLString(Self.errorHTML(error: error), baseURL: nil)
             finishPreviewPreparation(error)
@@ -36,16 +42,17 @@ final class PreviewViewController: NSViewController, QLPreviewingController, WKN
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard let pendingNavigation, navigation === pendingNavigation else { return }
         finishPreviewPreparation(nil)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        webView.loadHTMLString(Self.errorHTML(error: error), baseURL: nil)
+        guard let pendingNavigation, navigation === pendingNavigation else { return }
         finishPreviewPreparation(error)
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        webView.loadHTMLString(Self.errorHTML(error: error), baseURL: nil)
+        guard let pendingNavigation, navigation === pendingNavigation else { return }
         finishPreviewPreparation(error)
     }
 
@@ -55,15 +62,13 @@ final class PreviewViewController: NSViewController, QLPreviewingController, WKN
             code: 1002,
             userInfo: [NSLocalizedDescriptionKey: "Web content process terminated while rendering the preview."]
         )
-        webView.loadHTMLString(Self.errorHTML(error: error), baseURL: nil)
         finishPreviewPreparation(error)
     }
 
     private func finishPreviewPreparation(_ error: Error?) {
-        guard !didCompleteCurrentRequest else { return }
-        didCompleteCurrentRequest = true
         let completionHandler = pendingCompletionHandler
         pendingCompletionHandler = nil
+        pendingNavigation = nil
         completionHandler?(error)
     }
 

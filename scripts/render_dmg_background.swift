@@ -63,11 +63,10 @@ drawText(
 )
 
 drawText(
-    "DRAG TO INSTALL",
+    "1. Drag Markdown Preview to Applications",
     in: CGRect(x: 60, y: 292, width: 540, height: 22),
     font: NSFont.systemFont(ofSize: 14, weight: .medium),
-    color: NSColor(calibratedRed: 0.36, green: 0.43, blue: 0.45, alpha: 1),
-    letterSpacing: 2
+    color: NSColor(calibratedRed: 0.36, green: 0.43, blue: 0.45, alpha: 1)
 )
 
 let panelFill = NSColor(calibratedWhite: 1, alpha: 0.92)
@@ -87,6 +86,13 @@ arrow.move(to: CGPoint(x: 356, y: 185))
 arrow.line(to: CGPoint(x: 374, y: 171))
 arrow.line(to: CGPoint(x: 356, y: 157))
 arrow.stroke()
+
+drawText(
+    "2. Open Markdown Preview from Applications to enable Quick Look",
+    in: CGRect(x: 48, y: 48, width: 564, height: 22),
+    font: NSFont.systemFont(ofSize: 13, weight: .medium),
+    color: NSColor(calibratedRed: 0.36, green: 0.43, blue: 0.45, alpha: 1)
+)
 
 image.unlockFocus()
 

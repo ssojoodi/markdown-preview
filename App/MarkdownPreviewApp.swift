@@ -87,7 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 private struct AppPreviewView: View {
     @EnvironmentObject private var openDocumentState: OpenDocumentState
-    @AppStorage("didCompleteQuickLookSetup") private var didCompleteQuickLookSetup = false
+    @AppStorage("completedQuickLookSetupVersion") private var completedQuickLookSetupVersion = ""
     @State private var selectedFileURL: URL?
     @State private var selectedFilePath: String = "No file selected"
     @State private var renderedHTML: String = PreviewHTML.emptyState
@@ -103,18 +103,27 @@ private struct AppPreviewView: View {
 
     private let renderer = MarkdownToHTMLRenderer()
 
+    private var releaseVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+    }
+
+    private var didCompleteQuickLookSetup: Bool {
+        completedQuickLookSetupVersion == releaseVersion
+    }
+
     var body: some View {
         Group {
             if !isShowingSetup && (didCompleteQuickLookSetup || isSetupDeferred) {
                 previewContent
             } else {
                 QuickLookSetupView(
+                    isSetupComplete: didCompleteQuickLookSetup,
                     onOpenSettings: openQuickLookSettings,
                     onConfirm: {
-                        didCompleteQuickLookSetup = true
+                        completedQuickLookSetupVersion = releaseVersion
                         isShowingSetup = false
                     },
-                    onSkip: {
+                    onClose: {
                         isSetupDeferred = true
                         isShowingSetup = false
                     }
@@ -594,10 +603,10 @@ private struct CircleIconButtonStyle: ButtonStyle {
 }
 
 private struct QuickLookSetupView: View {
+    let isSetupComplete: Bool
     let onOpenSettings: () -> Void
     let onConfirm: () -> Void
-    let onSkip: () -> Void
-    @State private var didRevealSample = false
+    let onClose: () -> Void
     @State private var sampleError: String?
 
     var body: some View {
@@ -624,7 +633,7 @@ private struct QuickLookSetupView: View {
                     SetupStep(number: 1, text: "Open System Settings")
                     SetupStep(number: 2, text: "Go to General -> Login Items & Extensions -> Quick Look")
                     SetupStep(number: 3, text: "Turn on Markdown Preview")
-                    SetupStep(number: 4, text: "Show the sample in Finder, then press Space. Look for a formatted heading, a table, and a diagram.")
+                    SetupStep(number: 4, text: "Save the sample to a folder of your choice, then press Space in Finder. Look for a formatted heading, a table, and a diagram.")
                 }
 
                 HStack(spacing: 12) {
@@ -634,7 +643,7 @@ private struct QuickLookSetupView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
 
-                    Button("Show Sample in Finder", action: revealSample)
+                    Button("Save Sample…", action: revealSample)
                     .controlSize(.large)
                 }
 
@@ -647,9 +656,14 @@ private struct QuickLookSetupView: View {
                 }
 
                 HStack(spacing: 12) {
-                    Button("The Preview Works", action: onConfirm)
-                        .disabled(!didRevealSample)
-                    Button("Set Up Later", action: onSkip)
+                    Button("Close", action: onClose)
+                        .keyboardShortcut(.cancelAction)
+                        .help("Close Quick Look setup")
+                    if !isSetupComplete {
+                        Button("Complete Setup", action: onConfirm)
+                            .buttonStyle(.borderedProminent)
+                            .help("Mark setup as complete and return to the app")
+                    }
                 }
             }
             .frame(maxWidth: 560, alignment: .leading)
@@ -662,11 +676,18 @@ private struct QuickLookSetupView: View {
     }
 
     private func revealSample() {
+        let panel = NSSavePanel()
+        panel.title = "Save Quick Look Sample"
+        panel.nameFieldStringValue = "Welcome.md"
+        panel.allowedContentTypes = [.plainText]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let didAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if didAccess { url.stopAccessingSecurityScopedResource() }
+        }
         do {
-            let directory = FileManager.default.temporaryDirectory
-                .appendingPathComponent("MarkdownPreview-Setup", isDirectory: true)
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let url = directory.appendingPathComponent("Welcome.md")
             let sample = """
             # Your Markdown preview works!
 
@@ -685,7 +706,6 @@ private struct QuickLookSetupView: View {
             """
             try sample.write(to: url, atomically: true, encoding: .utf8)
             NSWorkspace.shared.activateFileViewerSelecting([url])
-            didRevealSample = true
             sampleError = nil
         } catch {
             sampleError = "Unable to create the sample: \(error.localizedDescription)"
