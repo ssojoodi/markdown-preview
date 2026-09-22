@@ -12,4 +12,4 @@ xcuserdata/
 # Local signing secrets
 Config/LocalSigning.xcconfig
 
-docs/
+internal-docs/

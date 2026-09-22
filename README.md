@@ -1,12 +1,27 @@
 # Markdown Preview
 
-Current release: **v.20260915** (macOS bundle version `2026.9.15`, build `1`).
+**Select a Markdown file. Press Space. Read it beautifully.**
 
-Quick Look setup completion is saved per release. A new release shows setup again on a normal app launch; opening a document bypasses setup for that session. Reinstalling the same release preserves completion. Setup is always available from the advanced toolbar's gear button.
+Markdown Preview brings formatted text, tables, images, and Mermaid diagrams to Finder's Quick Look. Browse READMEs, project notes, and technical docs without opening an editor.
 
-Markdown Preview lets you read Markdown files with formatted text, tables, images, and Mermaid diagrams on your Mac. Preview files directly in Finder, or open the app to read, edit, and create Markdown.
+[Install and try it](#install-and-try-it) · [Features](#read-edit-and-create) · [Developer guide](#developer-guide)
 
-After installing and enabling the app, select a Markdown file in Finder and press `Space` to see a rendered preview.
+![Finder Quick Look rendering a Markdown heading, formatted text, a table, and a Mermaid flowchart](docs/images/MarkdownPreview-preview.png)
+
+*A single press of Space turns Markdown source into a readable document, including tables and diagrams.*
+
+## Read, Edit, and Create
+
+Open a document in Markdown Preview for a clean reading view. When you need to make changes, expand the toolbar to edit, save, or create a new file.
+
+![Markdown Preview app displaying a document with its advanced controls collapsed](docs/images/MarkdownPreview-Open.png)
+
+- **Read in Finder:** preview `.md` and `.markdown` files without leaving your folder.
+- **See the structure:** render headings, lists, tables, code blocks, local images, and Mermaid diagrams.
+- **Make a quick edit:** switch between Markdown source and preview, with save prompts protecting unsaved edits when closing or quitting.
+- **Start from rich text:** paste formatted content into the converter and copy the Markdown equivalent, including lists, links, tables, and code.
+
+Requires **macOS 13.0 or newer**. Released under the [MIT License](LICENSE).
 
 ## Install and Try It
 
@@ -21,6 +36,21 @@ Requires **macOS 13.0 or newer**. You do not need Xcode to use a packaged app.
 You can choose **Close** to use the app immediately without marking setup complete. To return to setup, expand **Show advanced options** (the sliders icon), then click **Quick Look setup** (the gear icon). Once setup is complete, the setup page shows only **Close** at the bottom.
 
 If you only have the source code, see [Developer Guide](#developer-guide) to build the app.
+
+<details>
+<summary>See installation and setup screenshots</summary>
+
+### Install in Applications
+
+![DMG window showing Markdown Preview being dragged to Applications and instructions to open the installed app](docs/images/MarkdownPreview-Install.png)
+
+### Enable Finder Previews
+
+![Quick Look setup screen with Open System Settings, Save Sample, Close, and Complete Setup actions](docs/images/MarkdownPreview-Setup.png)
+
+</details>
+
+Setup completion is remembered per release. A new release shows setup again on a normal launch; opening a document bypasses it for that session. Reinstalling the same release preserves completion. You can always reopen setup with the gear button in the advanced toolbar.
 
 ## Use Markdown Preview
 
@@ -56,6 +86,8 @@ Markdown Preview uses a lightweight built-in renderer. It is not a full CommonMa
 ## Developer Guide
 
 The sections below cover building, signing, packaging, and troubleshooting development installations.
+
+Current release: **v.20260915** (macOS bundle version `2026.9.15`, build `1`).
 
 ### Requirements
 
