@@ -50,12 +50,8 @@ FILE_HANDLER_SCRIPT := scripts/set_markdown_file_handlers.swift
 
 .PHONY: assets build release check-release-config install uninstall rebuild refresh fix-file-handlers test clean paths
 
-define run_build
-$(XCODEBUILD) -derivedDataPath $(DERIVED_DATA) clean build $(1)
-endef
-
 build: assets
-	$(call run_build,)
+	$(XCODEBUILD) -derivedDataPath $(DERIVED_DATA) clean build
 
 test:
 	mkdir -p .build/TestBinaries .build/TestFixtures $(SWIFT_MODULE_CACHE)
