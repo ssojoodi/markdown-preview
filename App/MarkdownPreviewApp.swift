@@ -89,7 +89,6 @@ private struct AppPreviewView: View {
     @EnvironmentObject private var openDocumentState: OpenDocumentState
     @AppStorage("completedQuickLookSetupVersion") private var completedQuickLookSetupVersion = ""
     @State private var selectedFileURL: URL?
-    @State private var selectedFilePath: String = "No file selected"
     @State private var renderedHTML: String = PreviewHTML.emptyState
     @State private var markdownText: String = ""
     @State private var isDirty = false
@@ -180,7 +179,7 @@ private struct AppPreviewView: View {
                         Image(systemName: "info.circle")
                     }
                     .buttonStyle(CircleIconButtonStyle())
-                    .help(selectedFilePath)
+                    .help(selectedFileURL?.path ?? "")
                     .transition(.opacity)
                 }
 
@@ -294,7 +293,6 @@ private struct AppPreviewView: View {
         guard confirmDiscardingChangesIfNeeded() else { return }
 
         selectedFileURL = nil
-        selectedFilePath = "Unsaved Markdown document"
         markdownText = ""
         renderedHTML = renderer.render(markdown: "", baseURL: renderBaseFileURL).html
         isDirty = false
@@ -363,7 +361,6 @@ private struct AppPreviewView: View {
 
     private func loadSelectedFile(_ url: URL) {
         selectedFileURL = url
-        selectedFilePath = url.path
         isUntitledDocument = false
         isDirty = false
         isEditMode = false
@@ -426,7 +423,6 @@ private struct AppPreviewView: View {
         do {
             try data.write(to: url, options: .atomic)
             selectedFileURL = url
-            selectedFilePath = url.path
             isUntitledDocument = false
             isDirty = false
             renderedHTML = renderer.render(markdown: markdownText, baseURL: url).html
