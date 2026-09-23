@@ -151,7 +151,6 @@ private struct AppPreviewView: View {
             if isEditMode {
                 MarkdownEditor(
                     text: $markdownText,
-                    isActive: isEditMode,
                     onTextChange: {
                         isDirty = true
                     }
@@ -772,7 +771,6 @@ private final class DocumentWindowGuardView: NSView, NSWindowDelegate {
 
 private struct MarkdownEditor: NSViewRepresentable {
     @Binding var text: String
-    let isActive: Bool
     let onTextChange: () -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -823,7 +821,7 @@ private struct MarkdownEditor: NSViewRepresentable {
             textView.string = text
         }
 
-        if isActive, textView.window?.firstResponder !== textView {
+        if textView.window?.firstResponder !== textView {
             DispatchQueue.main.async {
                 textView.window?.makeFirstResponder(textView)
             }
