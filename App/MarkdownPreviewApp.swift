@@ -1339,11 +1339,7 @@ private enum RichTextMarkdownConverter {
     private static func imageMarkdown(from attributes: [NSAttributedString.Key: Any]) -> String? {
         guard attributes[.attachment] is NSTextAttachment else { return nil }
         let destination = linkDestination(from: attributes) ?? "image"
-        let image = "![Image](\(destination))"
-        if let link = linkDestination(from: attributes), link != destination {
-            return "[\(image)](\(link))"
-        }
-        return image
+        return "![Image](\(destination))"
     }
 
     private static func linkDestination(from attributes: [NSAttributedString.Key: Any]) -> String? {
