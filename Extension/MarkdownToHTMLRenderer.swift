@@ -433,9 +433,7 @@ final class MarkdownToHTMLRenderer {
             return "<img src=\"\(escapeHTML(destination))\" alt=\"\(escapeHTML(alt))\" />"
         }
 
-        guard let fileURL = resolveLocalPath(destination, baseURL: baseURL) else {
-            return "<span class=\"missing-image\">[Missing image: \(escapeHTML(destination))]</span>"
-        }
+        let fileURL = resolveLocalPath(destination, baseURL: baseURL)
 
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return "<span class=\"missing-image\">[Missing image: \(escapeHTML(destination))]</span>"
@@ -458,14 +456,10 @@ final class MarkdownToHTMLRenderer {
             return destination
         }
 
-        if let fileURL = resolveLocalPath(destination, baseURL: baseURL) {
-            return fileURL.absoluteString
-        }
-
-        return destination
+        return resolveLocalPath(destination, baseURL: baseURL).absoluteString
     }
 
-    private func resolveLocalPath(_ path: String, baseURL: URL) -> URL? {
+    private func resolveLocalPath(_ path: String, baseURL: URL) -> URL {
         if path.hasPrefix("/") {
             return URL(fileURLWithPath: path)
         }
