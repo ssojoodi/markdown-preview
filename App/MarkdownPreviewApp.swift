@@ -952,7 +952,7 @@ private struct RichTextPasteEditor: NSViewRepresentable {
     let onHTMLPaste: (String) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onTextChange: onTextChange, onHTMLPaste: onHTMLPaste)
+        Coordinator(onTextChange: onTextChange)
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -1004,13 +1004,11 @@ private struct RichTextPasteEditor: NSViewRepresentable {
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         let onTextChange: (NSAttributedString) -> Void
-        let onHTMLPaste: (String) -> Void
         weak var textView: RichTextPasteTextView?
         var isUpdatingFromTextView = false
 
-        init(onTextChange: @escaping (NSAttributedString) -> Void, onHTMLPaste: @escaping (String) -> Void) {
+        init(onTextChange: @escaping (NSAttributedString) -> Void) {
             self.onTextChange = onTextChange
-            self.onHTMLPaste = onHTMLPaste
         }
 
         func textDidChange(_ notification: Notification) {
