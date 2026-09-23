@@ -22,9 +22,7 @@ BRAND_DIR := Brand
 BRAND_BUILD_DIR := ./.build/BrandAssets
 SVG_RENDERER := scripts/render_svg.swift
 DMG_BACKGROUND_RENDERER := scripts/render_dmg_background.swift
-LOGO_SVG := $(BRAND_DIR)/markdownpreview-logo.svg
 APP_ICON_SVG := $(BRAND_DIR)/markdownpreview-app-icon.svg
-LOGO_PNG := $(BRAND_BUILD_DIR)/markdownpreview-logo.png
 APP_ICON_PNG := $(BRAND_BUILD_DIR)/markdownpreview-app-icon.png
 DMG_BACKGROUND_PNG := $(BRAND_BUILD_DIR)/dmg-background.png
 ASSETCATALOG_DIR := App/Assets.xcassets
@@ -99,17 +97,13 @@ check-release-config:
 		exit 2; \
 	}
 
-assets: $(LOGO_PNG) $(APP_ICON_PNG) $(DMG_BACKGROUND_PNG)
+assets: $(APP_ICON_PNG) $(DMG_BACKGROUND_PNG)
 	mkdir -p $(APPICONSET_DIR)
 	for spec in $(APP_ICON_SPECS); do \
 		name=$${spec%:*}; \
 		size=$${spec#*:}; \
 		sips -z $$size $$size $(APP_ICON_PNG) --out $(APPICONSET_DIR)/appicon-$$name >/dev/null; \
 	done
-
-$(LOGO_PNG): $(LOGO_SVG) $(SVG_RENDERER)
-	mkdir -p $(BRAND_BUILD_DIR)
-	$(SWIFT) $(SVG_RENDERER) $(LOGO_SVG) $(LOGO_PNG) 1200 320
 
 $(APP_ICON_PNG): $(APP_ICON_SVG) $(SVG_RENDERER)
 	mkdir -p $(BRAND_BUILD_DIR)
@@ -172,5 +166,4 @@ paths:
 	@echo "Installed app: $(INSTALL_APP)"
 	@echo "App bundle ID: $(APP_BUNDLE_ID)"
 	@echo "Extension bundle ID: $(EXTENSION_BUNDLE_ID)"
-	@echo "Logo PNG: $(LOGO_PNG)"
 	@echo "App icon PNG: $(APP_ICON_PNG)"
