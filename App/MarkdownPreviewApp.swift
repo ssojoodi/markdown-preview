@@ -99,6 +99,7 @@ private struct AppPreviewView: View {
     @State private var isAdvancedOptionsExpanded = false
     @State private var isSetupDeferred = false
     @State private var isShowingSetup = false
+    @State private var windowActivationRequest = 0
 
     private let renderer = MarkdownToHTMLRenderer()
 
@@ -130,7 +131,11 @@ private struct AppPreviewView: View {
             }
         }
         .frame(minWidth: 980, minHeight: 720)
-        .background(DocumentWindowGuard(isDirty: isDirty, confirmClose: confirmDiscardingChangesIfNeeded))
+        .background(DocumentWindowGuard(
+            isDirty: isDirty,
+            activationRequest: windowActivationRequest,
+            confirmClose: confirmDiscardingChangesIfNeeded
+        ))
         .onAppear {
             loadOpenedFileIfAvailable()
         }
@@ -394,6 +399,8 @@ private struct AppPreviewView: View {
     }
 
     private func openDocument(_ url: URL) {
+        NSApp.activate(ignoringOtherApps: true)
+        windowActivationRequest += 1
         guard confirmDiscardingChangesIfNeeded() else { return }
         isSetupDeferred = true
         isShowingSetup = false
@@ -711,6 +718,7 @@ private struct QuickLookSetupView: View {
 // Forward SwiftUI's window delegate methods while intercepting user-initiated closes.
 private struct DocumentWindowGuard: NSViewRepresentable {
     let isDirty: Bool
+    let activationRequest: Int
     let confirmClose: () -> Bool
 
     func makeNSView(context: Context) -> DocumentWindowGuardView {
@@ -722,6 +730,7 @@ private struct DocumentWindowGuard: NSViewRepresentable {
     func updateNSView(_ view: DocumentWindowGuardView, context: Context) {
         view.confirmClose = confirmClose
         view.window?.isDocumentEdited = isDirty
+        view.activationRequest = activationRequest
     }
 
     static func dismantleNSView(_ view: DocumentWindowGuardView, coordinator: ()) {
@@ -729,33 +738,65 @@ private struct DocumentWindowGuard: NSViewRepresentable {
     }
 }
 
-private final class DocumentWindowGuardView: NSView, NSWindowDelegate {
+private final class DocumentWindowGuardView: NSView {
     static let active = NSHashTable<DocumentWindowGuardView>.weakObjects()
     var confirmClose: () -> Bool = { true }
+    var activationRequest = 0 {
+        didSet { activateWindowIfNeeded() }
+    }
+    private var handledActivationRequest = 0
     private weak var guardedWindow: NSWindow?
-    private weak var originalDelegate: NSWindowDelegate?
+    private var delegateProxy: DocumentWindowDelegate?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         detach()
         guard let window else { return }
         guardedWindow = window
-        originalDelegate = window.delegate
-        window.delegate = self
+        let proxy = DocumentWindowDelegate(guardView: self, originalDelegate: window.delegate)
+        delegateProxy = proxy
+        window.delegate = proxy
         Self.active.add(self)
+        activateWindowIfNeeded()
+    }
+
+    private func activateWindowIfNeeded() {
+        guard activationRequest != handledActivationRequest, let window else { return }
+        handledActivationRequest = activationRequest
+        // Wait until SwiftUI finishes attaching and updating the document window.
+        DispatchQueue.main.async { [weak self, weak window] in
+            guard let self, let window, self.window === window else { return }
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     func detach() {
-        if let window = guardedWindow, window.delegate === self {
-            window.delegate = originalDelegate
+        if let window = guardedWindow, let proxy = delegateProxy, window.delegate === proxy {
+            window.delegate = proxy.originalDelegate
         }
         Self.active.remove(self)
         guardedWindow = nil
-        originalDelegate = nil
+        delegateProxy = nil
+    }
+}
+
+// NSResponder has its own message forwarding; use NSObject for delegate forwarding.
+private final class DocumentWindowDelegate: NSObject, NSWindowDelegate {
+    private weak var guardView: DocumentWindowGuardView?
+    let originalDelegate: NSWindowDelegate?
+
+    init(guardView: DocumentWindowGuardView, originalDelegate: NSWindowDelegate?) {
+        self.guardView = guardView
+        self.originalDelegate = originalDelegate
+        super.init()
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        guard confirmClose() else { return false }
+        guard guardView?.confirmClose() ?? true else { return false }
         return originalDelegate?.windowShouldClose?(sender) ?? true
     }
 
