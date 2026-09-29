@@ -42,6 +42,8 @@ APP_ICON_SPECS := \
 DIST_DIR := ./.build/Dist
 DMG_VOLUME_NAME := Markdown Preview
 DMG := $(DIST_DIR)/MarkdownPreview.dmg
+WEB_DMG := web-page/MarkdownPreview.dmg
+DMG_BACKUP_DIR := docs/dmg-backups
 RELEASE_ARCHIVE := $(DIST_DIR)/MarkdownPreview.xcarchive
 RELEASE_APP := $(RELEASE_ARCHIVE)/Products/Applications/$(APP_NAME)
 RELEASE_APP_ZIP := $(DIST_DIR)/MarkdownPreview-app-notary.zip
@@ -75,7 +77,8 @@ release: check-release-config assets
 	xcrun stapler validate "$(DMG)"
 	spctl --assess --type execute --verbose=2 "$(RELEASE_APP)"
 	spctl --assess --type open --context context:primary-signature --verbose=2 "$(DMG)"
-	@echo "Release DMG: $(DMG)"
+	bash scripts/publish_dmg.sh "$(DMG)" "$(WEB_DMG)" "$(DMG_BACKUP_DIR)"
+	@echo "Release DMG: $(WEB_DMG)"
 
 check-release-config:
 	@if [ -z "$(strip $(DEVELOPER_ID_TEAM))" ]; then \
@@ -158,7 +161,9 @@ clean:
 
 paths:
 	@echo "Built app: $(BUILD_APP)"
-	@echo "DMG: $(DMG)"
+	@echo "Release DMG: $(WEB_DMG)"
+	@echo "Build DMG: $(DMG)"
+	@echo "DMG backups: $(DMG_BACKUP_DIR)"
 	@echo "Installed app: $(INSTALL_APP)"
 	@echo "App bundle ID: $(APP_BUNDLE_ID)"
 	@echo "Extension bundle ID: $(EXTENSION_BUNDLE_ID)"

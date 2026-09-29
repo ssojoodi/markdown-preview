@@ -146,7 +146,11 @@ make release \
   NOTARY_PROFILE="sojoodi-macapp-notary"
 ```
 
-The generated notarized disk image is written to `.build/Dist/MarkdownPreview.dmg`.
+After all release checks pass, the notarized disk image is copied to
+`web-page/MarkdownPreview.dmg`. The previous website DMG is archived with a UTC
+timestamp in `docs/dmg-backups/`. A build copy remains at
+`.build/Dist/MarkdownPreview.dmg`. `make clean` preserves the website download
+and backups.
 
 ### Install a Development Build
 

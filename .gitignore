@@ -13,3 +13,6 @@ xcuserdata/
 Config/LocalSigning.xcconfig
 
 internal-docs/
+
+# Local release history
+docs/dmg-backups/
