@@ -87,7 +87,7 @@ Markdown Preview uses a lightweight built-in renderer. It is not a full CommonMa
 
 The sections below cover building, signing, packaging, and troubleshooting development installations.
 
-Current release: **v.20260915** (macOS bundle version `2026.9.15`, build `1`).
+Current release: **v.20260928** (macOS bundle version `2026.9.28`, build `1`).
 
 ### Requirements
 

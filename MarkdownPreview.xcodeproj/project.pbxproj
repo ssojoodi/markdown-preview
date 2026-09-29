@@ -365,7 +365,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2026.9.15;
+				MARKETING_VERSION = 2026.9.28;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sojoodi.MarkdownPreview;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
@@ -405,7 +405,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2026.9.15;
+				MARKETING_VERSION = 2026.9.28;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sojoodi.MarkdownPreview;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
@@ -446,7 +446,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2026.9.15;
+				MARKETING_VERSION = 2026.9.28;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sojoodi.MarkdownPreview.MarkdownPreviewExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
@@ -488,7 +488,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2026.9.15;
+				MARKETING_VERSION = 2026.9.28;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sojoodi.MarkdownPreview.MarkdownPreviewExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
