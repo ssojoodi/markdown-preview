@@ -89,7 +89,6 @@ private struct AppPreviewView: View {
     @EnvironmentObject private var openDocumentState: OpenDocumentState
     @AppStorage("completedQuickLookSetupVersion") private var completedQuickLookSetupVersion = ""
     @State private var selectedFileURL: URL?
-    @State private var selectedFilePath: String = "No file selected"
     @State private var renderedHTML: String = PreviewHTML.emptyState
     @State private var markdownText: String = ""
     @State private var isDirty = false
@@ -100,6 +99,7 @@ private struct AppPreviewView: View {
     @State private var isAdvancedOptionsExpanded = false
     @State private var isSetupDeferred = false
     @State private var isShowingSetup = false
+    @State private var windowActivationRequest = 0
 
     private let renderer = MarkdownToHTMLRenderer()
 
@@ -131,7 +131,11 @@ private struct AppPreviewView: View {
             }
         }
         .frame(minWidth: 980, minHeight: 720)
-        .background(DocumentWindowGuard(isDirty: isDirty, confirmClose: confirmDiscardingChangesIfNeeded))
+        .background(DocumentWindowGuard(
+            isDirty: isDirty,
+            activationRequest: windowActivationRequest,
+            confirmClose: confirmDiscardingChangesIfNeeded
+        ))
         .onAppear {
             loadOpenedFileIfAvailable()
         }
@@ -152,7 +156,6 @@ private struct AppPreviewView: View {
             if isEditMode {
                 MarkdownEditor(
                     text: $markdownText,
-                    isActive: isEditMode,
                     onTextChange: {
                         isDirty = true
                     }
@@ -180,7 +183,7 @@ private struct AppPreviewView: View {
                         Image(systemName: "info.circle")
                     }
                     .buttonStyle(CircleIconButtonStyle())
-                    .help(selectedFilePath)
+                    .help(selectedFileURL?.path ?? "")
                     .transition(.opacity)
                 }
 
@@ -294,7 +297,6 @@ private struct AppPreviewView: View {
         guard confirmDiscardingChangesIfNeeded() else { return }
 
         selectedFileURL = nil
-        selectedFilePath = "Unsaved Markdown document"
         markdownText = ""
         renderedHTML = renderer.render(markdown: "", baseURL: renderBaseFileURL).html
         isDirty = false
@@ -363,7 +365,6 @@ private struct AppPreviewView: View {
 
     private func loadSelectedFile(_ url: URL) {
         selectedFileURL = url
-        selectedFilePath = url.path
         isUntitledDocument = false
         isDirty = false
         isEditMode = false
@@ -398,6 +399,8 @@ private struct AppPreviewView: View {
     }
 
     private func openDocument(_ url: URL) {
+        NSApp.activate(ignoringOtherApps: true)
+        windowActivationRequest += 1
         guard confirmDiscardingChangesIfNeeded() else { return }
         isSetupDeferred = true
         isShowingSetup = false
@@ -426,7 +429,6 @@ private struct AppPreviewView: View {
         do {
             try data.write(to: url, options: .atomic)
             selectedFileURL = url
-            selectedFilePath = url.path
             isUntitledDocument = false
             isDirty = false
             renderedHTML = renderer.render(markdown: markdownText, baseURL: url).html
@@ -716,6 +718,7 @@ private struct QuickLookSetupView: View {
 // Forward SwiftUI's window delegate methods while intercepting user-initiated closes.
 private struct DocumentWindowGuard: NSViewRepresentable {
     let isDirty: Bool
+    let activationRequest: Int
     let confirmClose: () -> Bool
 
     func makeNSView(context: Context) -> DocumentWindowGuardView {
@@ -727,6 +730,7 @@ private struct DocumentWindowGuard: NSViewRepresentable {
     func updateNSView(_ view: DocumentWindowGuardView, context: Context) {
         view.confirmClose = confirmClose
         view.window?.isDocumentEdited = isDirty
+        view.activationRequest = activationRequest
     }
 
     static func dismantleNSView(_ view: DocumentWindowGuardView, coordinator: ()) {
@@ -734,33 +738,65 @@ private struct DocumentWindowGuard: NSViewRepresentable {
     }
 }
 
-private final class DocumentWindowGuardView: NSView, NSWindowDelegate {
+private final class DocumentWindowGuardView: NSView {
     static let active = NSHashTable<DocumentWindowGuardView>.weakObjects()
     var confirmClose: () -> Bool = { true }
+    var activationRequest = 0 {
+        didSet { activateWindowIfNeeded() }
+    }
+    private var handledActivationRequest = 0
     private weak var guardedWindow: NSWindow?
-    private weak var originalDelegate: NSWindowDelegate?
+    private var delegateProxy: DocumentWindowDelegate?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         detach()
         guard let window else { return }
         guardedWindow = window
-        originalDelegate = window.delegate
-        window.delegate = self
+        let proxy = DocumentWindowDelegate(guardView: self, originalDelegate: window.delegate)
+        delegateProxy = proxy
+        window.delegate = proxy
         Self.active.add(self)
+        activateWindowIfNeeded()
+    }
+
+    private func activateWindowIfNeeded() {
+        guard activationRequest != handledActivationRequest, let window else { return }
+        handledActivationRequest = activationRequest
+        // Wait until SwiftUI finishes attaching and updating the document window.
+        DispatchQueue.main.async { [weak self, weak window] in
+            guard let self, let window, self.window === window else { return }
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     func detach() {
-        if let window = guardedWindow, window.delegate === self {
-            window.delegate = originalDelegate
+        if let window = guardedWindow, let proxy = delegateProxy, window.delegate === proxy {
+            window.delegate = proxy.originalDelegate
         }
         Self.active.remove(self)
         guardedWindow = nil
-        originalDelegate = nil
+        delegateProxy = nil
+    }
+}
+
+// NSResponder has its own message forwarding; use NSObject for delegate forwarding.
+private final class DocumentWindowDelegate: NSObject, NSWindowDelegate {
+    private weak var guardView: DocumentWindowGuardView?
+    let originalDelegate: NSWindowDelegate?
+
+    init(guardView: DocumentWindowGuardView, originalDelegate: NSWindowDelegate?) {
+        self.guardView = guardView
+        self.originalDelegate = originalDelegate
+        super.init()
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        guard confirmClose() else { return false }
+        guard guardView?.confirmClose() ?? true else { return false }
         return originalDelegate?.windowShouldClose?(sender) ?? true
     }
 
@@ -776,7 +812,6 @@ private final class DocumentWindowGuardView: NSView, NSWindowDelegate {
 
 private struct MarkdownEditor: NSViewRepresentable {
     @Binding var text: String
-    let isActive: Bool
     let onTextChange: () -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -827,7 +862,7 @@ private struct MarkdownEditor: NSViewRepresentable {
             textView.string = text
         }
 
-        if isActive, textView.window?.firstResponder !== textView {
+        if textView.window?.firstResponder !== textView {
             DispatchQueue.main.async {
                 textView.window?.makeFirstResponder(textView)
             }
@@ -952,7 +987,7 @@ private struct RichTextPasteEditor: NSViewRepresentable {
     let onHTMLPaste: (String) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onTextChange: onTextChange, onHTMLPaste: onHTMLPaste)
+        Coordinator(onTextChange: onTextChange)
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -1004,13 +1039,11 @@ private struct RichTextPasteEditor: NSViewRepresentable {
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         let onTextChange: (NSAttributedString) -> Void
-        let onHTMLPaste: (String) -> Void
         weak var textView: RichTextPasteTextView?
         var isUpdatingFromTextView = false
 
-        init(onTextChange: @escaping (NSAttributedString) -> Void, onHTMLPaste: @escaping (String) -> Void) {
+        init(onTextChange: @escaping (NSAttributedString) -> Void) {
             self.onTextChange = onTextChange
-            self.onHTMLPaste = onHTMLPaste
         }
 
         func textDidChange(_ notification: Notification) {
@@ -1339,11 +1372,7 @@ private enum RichTextMarkdownConverter {
     private static func imageMarkdown(from attributes: [NSAttributedString.Key: Any]) -> String? {
         guard attributes[.attachment] is NSTextAttachment else { return nil }
         let destination = linkDestination(from: attributes) ?? "image"
-        let image = "![Image](\(destination))"
-        if let link = linkDestination(from: attributes), link != destination {
-            return "[\(image)](\(link))"
-        }
-        return image
+        return "![Image](\(destination))"
     }
 
     private static func linkDestination(from attributes: [NSAttributedString.Key: Any]) -> String? {

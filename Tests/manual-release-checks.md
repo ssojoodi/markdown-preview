@@ -2,6 +2,14 @@
 
 Use disposable Markdown files. Run these checks against the packaged app before distributing it.
 
+## Opening Documents
+
+1. Quit the app, then open a Markdown file from Finder. The app must launch without crashing and show the document window in front.
+2. Put another app in front, then open another Markdown file from Finder. The document window must come forward with the requested file.
+3. Minimize the document window, then open a Markdown file from Finder. The window must restore and come forward.
+4. Switch between the app and Finder several times. Focus changes must not crash the app.
+5. Edit a document, then open another file from Finder. Cancel the unsaved-changes prompt; the original document and edits must remain visible.
+
 ## Unsaved Edits
 
 Repeat for an existing file and a new document with text:

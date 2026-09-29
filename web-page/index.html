@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Markdown Preview for macOS</title>
+    <meta
+      name="description"
+      content="Download Markdown Preview, a lightweight macOS Quick Look extension for rendering Markdown files directly in Finder."
+    />
+    <link rel="canonical" href="https://sojoodi.com/apps/MarkdownPreview/" />
+    <meta property="og:title" content="Markdown Preview for macOS" />
+    <meta
+      property="og:description"
+      content="Render Markdown files directly in Finder with macOS Quick Look."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sojoodi.com/apps/MarkdownPreview/" />
+    <meta property="og:image" content="https://sojoodi.com/apps/MarkdownPreview/preview.jpg" />
+    <meta name="theme-color" content="#f6f1e8" />
+    <link rel="icon" href="app-icon.png" type="image/png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <nav class="topbar" aria-label="Page">
+        <a class="brand" href="./">
+          <img src="app-icon.png" width="512" height="512" alt="" />
+          <span>Markdown Preview</span>
+        </a>
+        <span class="topbar-note">Quick Look for Markdown on macOS</span>
+      </nav>
+
+      <header class="hero">
+        <div class="hero-grid">
+          <div>
+            <p class="eyebrow">For macOS Finder</p>
+            <h1>Preview Markdown with the Space bar.</h1>
+            <p class="lede">
+              Markdown Preview is a lightweight Quick Look extension for
+              rendering README files, notes, and local documentation without
+              opening an editor.
+            </p>
+            <div class="hero-actions">
+              <a
+                class="button button-primary"
+                href="MarkdownPreview.dmg"
+                download
+              >
+                <svg
+                  aria-hidden="true"
+                  width="19"
+                  height="19"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                Download DMG
+              </a>
+              <a class="button button-secondary" href="#install"
+                >Install steps</a
+              >
+              <span class="download-note">macOS 13 or newer</span>
+            </div>
+          </div>
+
+          <div class="hero-visual">
+            <figure>
+              <div class="preview-frame">
+                <img
+                  src="preview.jpg"
+                  width="1600"
+                  height="953"
+                  alt="A Markdown document rendered in a macOS Finder Quick Look preview."
+                />
+              </div>
+              <figcaption class="preview-caption">
+                Rendered Markdown directly in Finder.
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </header>
+    </div>
+
+    <main>
+      <section class="section-rule" aria-labelledby="support-title">
+        <div class="page-shell split">
+          <div>
+            <p class="eyebrow">Supported Markdown</p>
+            <h2 id="support-title">Built for everyday project files.</h2>
+            <p class="body-copy">
+              The renderer covers the Markdown patterns most often found in
+              READMEs, notes, specs, and local technical docs.
+            </p>
+          </div>
+          <ul class="feature-list">
+            <li>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 7h16M4 12h16M4 17h10"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <div>
+                <strong>Readable structure</strong>Headings, lists, blockquotes,
+                links, tables, and inline formatting.
+              </div>
+            </li>
+            <li>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M8 9 4 12l4 3m8-6 4 3-4 3M14 5l-4 14"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <div>
+                <strong>Code and diagrams</strong>Fenced code blocks and Mermaid
+                diagrams render inside the preview.
+              </div>
+            </li>
+            <li>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5 19V5h14v14H5Zm3-5 2.2-2.2 2.3 2.7 1.6-1.9L17 16H8Z"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <div>
+                <strong>Local context</strong>Local image references display
+                alongside the text when Finder can access them.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="install" class="steps" aria-labelledby="install-title">
+        <div class="page-shell">
+          <p class="eyebrow">Install</p>
+          <h2 id="install-title">
+            Download, move to Applications, enable Quick Look.
+          </h2>
+          <div class="step-grid">
+            <div class="step">
+              <span>1</span>
+              <h3>Open the DMG</h3>
+              <p>
+                Download the disk image and drag Markdown Preview into
+                Applications.
+              </p>
+            </div>
+            <div class="step">
+              <span>2</span>
+              <h3>Launch once</h3>
+              <p>
+                Open the app so macOS can register the bundled Quick Look
+                extension.
+              </p>
+            </div>
+            <div class="step">
+              <span>3</span>
+              <h3>Enable it</h3>
+              <p>
+                Turn on Markdown Preview in System Settings under Login Items
+                &amp; Extensions.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="download-title">
+        <div class="page-shell download-panel">
+          <img src="app-icon.png" width="512" height="512" alt="" />
+          <div>
+            <h2 id="download-title">Markdown Preview for macOS</h2>
+            <p>
+              Signed and notarized for distribution outside the Mac App Store.
+            </p>
+          </div>
+          <a class="button button-primary" href="MarkdownPreview.dmg" download>
+            <svg
+              aria-hidden="true"
+              width="19"
+              height="19"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <path
+                d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Download DMG
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="page-shell">
+        <span>Copyright &copy; 2026 Sahand Sojoodi</span>
+        <a href="release-notes.html">Release notes</a>
+        <a href="https://sojoodi.com/">sojoodi.com</a>
+      </div>
+    </footer>
+
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-KLFFZDT458"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-KLFFZDT458");
+    </script>
+  </body>
+</html>

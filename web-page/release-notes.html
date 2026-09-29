@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Release Notes - Markdown Preview for macOS</title>
+    <meta
+      name="description"
+      content="Release notes for Markdown Preview, the macOS app for previewing and editing Markdown files."
+    />
+    <link rel="canonical" href="https://sojoodi.com/apps/MarkdownPreview/release-notes.html" />
+    <meta property="og:title" content="Markdown Preview Release Notes" />
+    <meta property="og:description" content="Updates to Markdown Preview for macOS." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sojoodi.com/apps/MarkdownPreview/release-notes.html" />
+    <meta property="og:image" content="https://sojoodi.com/apps/MarkdownPreview/preview.jpg" />
+    <meta name="theme-color" content="#f6f1e8" />
+    <link rel="icon" href="app-icon.png" type="image/png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="release-page">
+    <a class="skip-link" href="#main">Skip to release notes</a>
+    <div class="page-shell">
+      <nav class="topbar" aria-label="Page">
+        <a class="brand" href="./">
+          <img src="app-icon.png" width="512" height="512" alt="" />
+          <span>Markdown Preview</span>
+        </a>
+        <a class="topbar-note" href="./">Back to download</a>
+      </nav>
+      <main id="main">
+        <header class="release-header">
+          <p class="eyebrow">Markdown Preview for macOS</p>
+          <h1>Release notes</h1>
+          <p class="lede">Features and updates for each release.</p>
+        </header>
+        <div class="release-list">
+          <article class="release" id="upcoming" aria-labelledby="release-upcoming">
+            <div class="release-meta">
+              <span class="release-version">Upcoming</span>
+              <p>Not yet released</p>
+              <a class="release-permalink" href="#upcoming">Link to these changes</a>
+            </div>
+            <div class="release-content">
+              <h2 id="release-upcoming">Open documents in front</h2>
+              <p class="release-intro">Updates to document opening, Quick Look setup, and the download website.</p>
+              <ul>
+                <li>Opening a Markdown file brings its window to the front, including when the window is minimized.</li>
+                <li>Fix a crash when a document window comes to the front.</li>
+                <li>Show the Markdown Preview icon for the Quick Look extension in System Settings.</li>
+                <li>Find the app download, previews, and release notes together on the website.</li>
+              </ul>
+            </div>
+          </article>
+          <article class="release" id="v20260915" aria-labelledby="release-20260915">
+            <div class="release-meta">
+              <span class="release-version">v.20260915</span>
+              <p>Version 2026.9.15<br />Build 1 &middot; macOS 13+</p>
+              <a class="release-permalink" href="#v20260915">Link to this release</a>
+            </div>
+            <div class="release-content">
+              <h2 id="release-20260915">Markdown previews, editing, and Quick Look setup</h2>
+              <p class="release-intro">Read Markdown in Finder, edit documents in the app, and convert rich text to Markdown.</p>
+              <figure class="release-screenshot">
+                <a href="preview.jpg" aria-label="View the full-size Markdown Preview screenshot">
+                  <img src="preview.jpg" width="1600" height="953" alt="Finder Quick Look displaying a Markdown document with headings and a Mermaid entity relationship diagram." />
+                </a>
+                <figcaption>Markdown and Mermaid diagrams in Finder. <a href="preview.jpg">View full size</a>.</figcaption>
+              </figure>
+              <section class="release-change" aria-labelledby="preview-markdown">
+                <div class="release-change-heading"><span class="release-number" aria-hidden="true">01</span><h3 id="preview-markdown">Preview Markdown</h3></div>
+            <ul>
+              <li>View Markdown files in Finder with the Space bar, or open them in the app.</li>
+              <li>Read headings, nested lists, tables, links, blockquotes, and code blocks with formatted text.</li>
+              <li>View Mermaid diagrams and local images alongside your documents.</li>
+            </ul>
+              </section>
+              <section class="release-change" aria-labelledby="create-edit">
+                <div class="release-change-heading"><span class="release-number" aria-hidden="true">02</span><h3 id="create-edit">Create and edit</h3></div>
+            <ul>
+              <li>Create a new Markdown file or edit an existing document.</li>
+              <li>Convert pasted rich text to Markdown, including headings, bold and italic text, lists, tables, links, and code.</li>
+              <li>Choose Save, Discard, or Cancel when closing a document with unsaved edits.</li>
+            </ul>
+              </section>
+              <section class="release-change" aria-labelledby="setup-installation">
+                <div class="release-change-heading"><span class="release-number" aria-hidden="true">03</span><h3 id="setup-installation">Setup and installation</h3></div>
+            <ul>
+              <li>Follow the setup screen to enable Quick Look and save a sample document for testing.</li>
+              <li>Reopen setup from the advanced controls. Setup completion is remembered for each release.</li>
+              <li>Install from a signed and notarized DMG.</li>
+            </ul>
+              </section>
+            </div>
+          </article>
+        </div>
+        <section class="download-panel release-download-panel" aria-labelledby="release-download-title">
+          <img src="app-icon.png" width="512" height="512" alt="" />
+          <div>
+            <h2 id="release-download-title">Markdown Preview for macOS</h2>
+            <p>Preview, create, and edit Markdown files.</p>
+          </div>
+          <a class="button button-primary" href="MarkdownPreview.dmg" download>Download DMG</a>
+        </section>
+      </main>
+    </div>
+    <footer>
+      <div class="page-shell">
+        <span>Copyright &copy; 2026 Sahand Sojoodi</span>
+        <a href="https://sojoodi.com/">sojoodi.com</a>
+      </div>
+    </footer>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KLFFZDT458"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-KLFFZDT458");
+    </script>
+  </body>
+</html>

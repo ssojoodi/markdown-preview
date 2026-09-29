@@ -146,7 +146,14 @@ make release \
   NOTARY_PROFILE="sojoodi-macapp-notary"
 ```
 
-The generated notarized disk image is written to `.build/Dist/MarkdownPreview.dmg`.
+After all release checks pass, the notarized disk image is copied to
+`web-page/MarkdownPreview.dmg`. The previous website DMG is archived with a UTC
+timestamp in `docs/dmg-backups/`. A build copy remains at
+`.build/Dist/MarkdownPreview.dmg`. `make clean` preserves the website download
+and backups.
+
+See the [website deployment guide](docs/website-deployment.md) to test and
+publish the download and release notes.
 
 ### Install a Development Build
 
@@ -177,11 +184,10 @@ If Finder still shows plain text, refresh Quick Look:
 make refresh
 ```
 
-If double-clicking Markdown files opens an old build or archived copy of the app, reset the local file handlers:
-
-```bash
-make fix-file-handlers
-```
+To choose the default app for Markdown files, select a `.md` file in Finder,
+choose **Get Info**, and expand **Open with**. Select Markdown Preview from
+`/Applications` (use **Other...** if needed), then click **Change All...**.
+Repeat for other extensions, such as `.markdown`, if needed.
 
 ### Registered UTTypes
 
