@@ -16,8 +16,6 @@ APP_NAME := MarkdownPreview.app
 BUILD_APP := $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)/$(APP_NAME)
 INSTALL_APP := /Applications/$(APP_NAME)
 EXTENSION_BUNDLE_ID := com.sojoodi.MarkdownPreview.MarkdownPreviewExtension
-LSREGISTER := /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
-MARKDOWN_CONTENT_TYPES := com.sojoodi.markdown public.markdown net.daringfireball.markdown net.multimarkdown.text com.unknown.md
 BRAND_DIR := Brand
 BRAND_BUILD_DIR := ./.build/BrandAssets
 SVG_RENDERER := scripts/render_svg.swift
@@ -48,9 +46,8 @@ RELEASE_ARCHIVE := $(DIST_DIR)/MarkdownPreview.xcarchive
 RELEASE_APP := $(RELEASE_ARCHIVE)/Products/Applications/$(APP_NAME)
 RELEASE_APP_ZIP := $(DIST_DIR)/MarkdownPreview-app-notary.zip
 DMG_SCRIPT := scripts/create_dmg.sh
-FILE_HANDLER_SCRIPT := scripts/set_markdown_file_handlers.swift
 
-.PHONY: assets build release check-release-config install uninstall rebuild refresh fix-file-handlers test clean paths
+.PHONY: assets build release check-release-config install uninstall rebuild refresh test clean paths
 
 build: assets
 	$(XCODEBUILD) -derivedDataPath $(DERIVED_DATA) clean build
@@ -129,29 +126,6 @@ refresh:
 	qlmanage -r
 	qlmanage -r cache
 	killall Finder
-
-fix-file-handlers:
-	@if [ ! -d "$(INSTALL_APP)" ]; then \
-		echo "$(INSTALL_APP) is not installed. Run: make rebuild" >&2; \
-		exit 2; \
-	fi
-	@for root in "$(HOME)/Library/Developer/Xcode/Archives" "$(DERIVED_DATA)" "$(DIST_DIR)"; do \
-		if [ -d "$$root" ]; then \
-			find "$$root" -path "*/$(APP_NAME)" -type d -print 2>/dev/null | while IFS= read -r app; do \
-				if [ "$$app" != "$(INSTALL_APP)" ]; then \
-					echo "Unregistering stale app: $$app"; \
-					"$(LSREGISTER)" -u "$$app" >/dev/null 2>&1 || true; \
-				fi; \
-			done; \
-		fi; \
-	done
-	"$(LSREGISTER)" -f "$(INSTALL_APP)"
-	mkdir -p $(SWIFT_MODULE_CACHE)
-	$(SWIFT) $(FILE_HANDLER_SCRIPT) "$(APP_BUNDLE_ID)" "$(INSTALL_APP)" $(MARKDOWN_CONTENT_TYPES)
-	qlmanage -r
-	qlmanage -r cache
-	killall cfprefsd || true
-	killall Finder || true
 
 clean:
 	rm -rf $(BRAND_BUILD_DIR)

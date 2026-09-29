@@ -181,11 +181,10 @@ If Finder still shows plain text, refresh Quick Look:
 make refresh
 ```
 
-If double-clicking Markdown files opens an old build or archived copy of the app, reset the local file handlers:
-
-```bash
-make fix-file-handlers
-```
+To choose the default app for Markdown files, select a `.md` file in Finder,
+choose **Get Info**, and expand **Open with**. Select Markdown Preview from
+`/Applications` (use **Other...** if needed), then click **Change All...**.
+Repeat for other extensions, such as `.markdown`, if needed.
 
 ### Registered UTTypes
 
