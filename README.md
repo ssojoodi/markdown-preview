@@ -152,6 +152,9 @@ timestamp in `docs/dmg-backups/`. A build copy remains at
 `.build/Dist/MarkdownPreview.dmg`. `make clean` preserves the website download
 and backups.
 
+See the [website deployment guide](docs/website-deployment.md) to test and
+publish the download and release notes.
+
 ### Install a Development Build
 
 Install the built app:
