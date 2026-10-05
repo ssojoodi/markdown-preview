@@ -3,94 +3,117 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Markdown Preview for macOS</title>
-    <meta
-      name="description"
-      content="Download Markdown Preview, a lightweight macOS Quick Look extension for rendering Markdown files directly in Finder."
-    />
+    <title>Markdown Preview for macOS — Quick Look &amp; Editing</title>
+    <meta name="description" content="Preview Markdown files in Finder with the Space bar. Create and edit documents, render Mermaid diagrams, and view local images on macOS 13 or newer." />
     <link rel="canonical" href="https://sojoodi.com/apps/MarkdownPreview/" />
-    <meta property="og:title" content="Markdown Preview for macOS" />
-    <meta
-      property="og:description"
-      content="Render Markdown files directly in Finder with macOS Quick Look."
-    />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Markdown Preview" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Markdown Preview for macOS — Quick Look &amp; Editing" />
+    <meta property="og:description" content="Preview Markdown files in Finder with the Space bar. Create and edit documents, render Mermaid diagrams, and view local images on macOS 13 or newer." />
     <meta property="og:url" content="https://sojoodi.com/apps/MarkdownPreview/" />
-    <meta property="og:image" content="https://sojoodi.com/apps/MarkdownPreview/preview.jpg" />
+    <meta property="og:image" content="https://sojoodi.com/apps/MarkdownPreview/social-preview.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Markdown Preview for macOS. Preview Markdown with the Space bar. Read, create, and edit Markdown files." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Markdown Preview for macOS — Quick Look &amp; Editing" />
+    <meta name="twitter:description" content="Preview Markdown files in Finder with the Space bar. Create and edit documents, render Mermaid diagrams, and view local images on macOS 13 or newer." />
+    <meta name="twitter:image" content="https://sojoodi.com/apps/MarkdownPreview/social-preview.png" />
+    <meta name="twitter:image:alt" content="Markdown Preview for macOS. Preview Markdown with the Space bar. Read, create, and edit Markdown files." />
     <meta name="theme-color" content="#f6f1e8" />
-    <link rel="icon" href="app-icon.png" type="image/png" />
+    <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="app-icon.png" sizes="512x512" type="image/png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "@id": "https://sojoodi.com/apps/MarkdownPreview/#app",
+        "name": "Markdown Preview",
+        "url": "https://sojoodi.com/apps/MarkdownPreview/",
+        "description": "Preview Markdown files in Finder with Quick Look, and create and edit Markdown documents.",
+        "operatingSystem": "macOS 13.0 or newer",
+        "applicationCategory": "ProductivityApplication",
+        "image": "https://sojoodi.com/apps/MarkdownPreview/social-preview.png",
+        "screenshot": "https://sojoodi.com/apps/MarkdownPreview/preview.jpg"
+      }
+    </script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
     <div class="page-shell">
       <nav class="topbar" aria-label="Page">
         <a class="brand" href="./">
-          <img src="app-icon.png" width="512" height="512" alt="" />
+          <img src="app-icon-160.png" width="160" height="160" alt="" />
           <span>Markdown Preview</span>
         </a>
         <span class="topbar-note">Quick Look for Markdown on macOS</span>
       </nav>
-
-      <header class="hero">
-        <div class="hero-grid">
-          <div>
-            <p class="eyebrow">For macOS Finder</p>
-            <h1>Preview Markdown with the Space bar.</h1>
-            <p class="lede">
-              Markdown Preview is a lightweight Quick Look extension for
-              rendering README files, notes, and local documentation without
-              opening an editor.
-            </p>
-            <div class="hero-actions">
-              <a
-                class="button button-primary"
-                href="MarkdownPreview.dmg"
-                download
-              >
-                <svg
-                  aria-hidden="true"
-                  width="19"
-                  height="19"
-                  viewBox="0 0 24 24"
-                  fill="none"
+    </div>
+    <main id="main" tabindex="-1">
+      <div class="page-shell">
+        <header class="hero">
+          <div class="hero-grid">
+            <div>
+              <p class="eyebrow">For macOS Finder</p>
+              <h1>Preview Markdown with the Space bar.</h1>
+              <p class="lede">
+                Markdown Preview is a lightweight Quick Look extension for
+                rendering README files, notes, and local documentation without
+                opening an editor.
+              </p>
+              <div class="hero-actions">
+                <a
+                  class="button button-primary"
+                  href="MarkdownPreview.dmg"
+                  download
                 >
-                  <path
-                    d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                  <svg
+                    aria-hidden="true"
+                    width="19"
+                    height="19"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <path
+                      d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Download DMG
+                </a>
+                <a class="button button-secondary" href="#install"
+                  >Install steps</a
+                >
+                <span class="download-note">macOS 13 or newer</span>
+              </div>
+            </div>
+
+            <div class="hero-visual">
+              <figure>
+                <div class="preview-frame">
+                  <img
+                    src="preview-800.webp" srcset="preview-800.webp 800w, preview-1600.webp 1600w" sizes="(max-width: 880px) calc(100vw - 32px), 560px" fetchpriority="high"
+                    width="1600"
+                    height="953"
+                    alt="A Markdown document rendered in a macOS Finder Quick Look preview."
                   />
-                </svg>
-                Download DMG
-              </a>
-              <a class="button button-secondary" href="#install"
-                >Install steps</a
-              >
-              <span class="download-note">macOS 13 or newer</span>
+                </div>
+                <figcaption class="preview-caption">
+                  Rendered Markdown directly in Finder.
+                </figcaption>
+              </figure>
             </div>
           </div>
+        </header>
+      </div>
 
-          <div class="hero-visual">
-            <figure>
-              <div class="preview-frame">
-                <img
-                  src="preview.jpg"
-                  width="1600"
-                  height="953"
-                  alt="A Markdown document rendered in a macOS Finder Quick Look preview."
-                />
-              </div>
-              <figcaption class="preview-caption">
-                Rendered Markdown directly in Finder.
-              </figcaption>
-            </figure>
-          </div>
-        </div>
-      </header>
-    </div>
-
-    <main>
       <section class="section-rule" aria-labelledby="support-title">
         <div class="page-shell split">
           <div>
@@ -186,7 +209,7 @@
 
       <section aria-labelledby="download-title">
         <div class="page-shell download-panel">
-          <img src="app-icon.png" width="512" height="512" alt="" />
+          <img src="app-icon-160.png" width="160" height="160" alt="" />
           <div>
             <h2 id="download-title">Markdown Preview for macOS</h2>
             <p>
@@ -219,6 +242,7 @@
       <div class="page-shell">
         <span>Copyright &copy; 2026 Sahand Sojoodi</span>
         <a href="release-notes.html">Release notes</a>
+        <a href="https://sojoodi.com/apps/">All apps</a>
         <a href="https://sojoodi.com/">sojoodi.com</a>
       </div>
     </footer>

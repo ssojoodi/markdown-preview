@@ -4,7 +4,7 @@
   --paper-soft: #fbf8f1;
   --ink: #201d19;
   --muted: #615b52;
-  --quiet: #8a8175;
+  --quiet: #615b52;
   --line: rgba(32, 29, 25, 0.14);
   --teal: #126d76;
   --teal-dark: #0d555d;
@@ -34,6 +34,7 @@ body {
 img {
   display: block;
   max-width: 100%;
+  height: auto;
 }
 
 a {
@@ -585,4 +586,13 @@ footer a {
   .release-change {
     break-inside: avoid;
   }
+}
+
+/* Keep the preview aligned with the content at narrow widths. */
+.hero-visual figure { margin: 0; min-width: 0; }
+.topbar, footer .page-shell { flex-wrap: wrap; }
+a { overflow-wrap: anywhere; }
+footer a, .topbar a, .release-permalink { min-height: 24px; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }
