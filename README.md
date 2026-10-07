@@ -68,6 +68,25 @@ Check that the Quick Look extension is enabled in System Settings. Close the pre
 
 Quit Markdown Preview, turn off its Quick Look extension in System Settings, and move MarkdownPreview from Applications to the Trash. Your Markdown documents remain where you saved them.
 
+## Print and Zoom
+
+Choose **File → Print…** or press **Command-P** to open the macOS print dialog.
+In preview mode, this prints the formatted document, including diagrams and
+images. In edit mode, it prints the current Markdown source, including unsaved
+edits. The print dialog also provides **Save as PDF**. Printing does not save or
+change your Markdown file.
+
+Use **View → Zoom In** (**Command-=**), **Zoom Out** (**Command--**), or
+**Original** (**Command-0**) to resize the preview. Zoom ranges from 50% to 300%;
+Original restores 100%. The zoom stays with the window when you open another
+file or switch between editing and preview. New windows start at 100%.
+Zoom is unavailable while editing and does not affect printed output.
+
+For development validation, run `make test` and `make test-native`. The native
+checks require a logged-in macOS session and save a test PDF under
+`.build/TestFixtures/`. Follow `Tests/manual-release-checks.md` for menu, dialog,
+and printer checks.
+
 ## Supported Markdown
 
 - Headings (`#` through `######`)

@@ -35,3 +35,32 @@ Repeat for an existing file and a new document with text:
 8. Preview one of your own Markdown files in Finder and open it in the app. Check local images and diagrams in both places.
 9. After completing setup, install a build with a newer release version and launch the app directly. Setup must appear again. Complete setup and relaunch; it must stay completed for that version.
 10. Reinstall the same release after completing setup. Completion should persist; the advanced toolbar gear must still reopen setup. Preferences saved by the older boolean-based setup flow must not suppress setup for the first versioned release.
+
+## Printing and Preview Zoom
+
+1. Open a document containing multiple pages of text, a table, long code lines,
+   local images, and wide/tall Mermaid diagrams. Use File → Print and Command-P.
+   Confirm the native print dialog appears and Save as PDF includes the entire
+   rendered document, without toolbar controls or clipped columns/diagrams.
+2. Repeat in light and dark appearance. Verify readable text and diagram labels,
+   appropriate page breaks, and PDF output at normal scale at both 50% and 300%
+   screen zoom. Cancel printing and verify the previous zoom and scroll position.
+3. Print immediately after opening a diagram-heavy document. Diagrams must finish
+   rendering first. Invalid diagrams and missing images must not hang printing;
+   a preparation timeout must show an error and permit a later retry.
+4. Edit a saved document and an untitled document. Print without saving; output
+   must contain the current Markdown source. Cancel and confirm edits, selection,
+   undo, and dirty state remain unchanged. Repeat with a printer when available.
+5. Use all three zoom menu commands and Command-=, Command--, and Command-0.
+   Verify Mermaid labels enlarge, enlarged content remains reachable by scrolling,
+   50%/300% limits disable the corresponding command, and Original restores 100%.
+6. Scroll down and zoom or expand/collapse the toolbar. The preview must not reload
+   or jump to the top. Reload the file, open another file, and switch between edit
+   and preview: retain the window's zoom. A new window must start at 100%.
+7. With two document windows, verify commands apply only to the active window and
+   each keeps its own zoom. Test commands with a toolbar button focused as well.
+8. Print and zoom must be disabled on setup, welcome, load-error, and converter
+   screens. Zoom must also be disabled while editing. Repeated Print commands
+   must not open overlapping dialogs. Switching documents during print preparation
+   must not print the previous document.
+9. Verify Finder Quick Look still renders Markdown and Mermaid normally.

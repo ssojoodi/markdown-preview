@@ -57,6 +57,16 @@ test:
 	$(SWIFTC) Extension/MarkdownToHTMLRenderer.swift scripts/test_renderer.swift -o .build/TestBinaries/renderer-tests
 	.build/TestBinaries/renderer-tests
 
+# Requires a logged-in macOS session for WebKit/AppKit integration checks.
+.PHONY: test-native
+test-native:
+	mkdir -p .build/TestBinaries .build/TestFixtures $(SWIFT_MODULE_CACHE)
+	sed '/^@main$$/d' App/MarkdownPreviewApp.swift > .build/TestBinaries/document-feature-tests.swift
+	cat scripts/test_document_features.swift >> .build/TestBinaries/document-feature-tests.swift
+	cp Extension/mermaid.min.js .build/TestBinaries/mermaid.min.js
+	$(SWIFTC) -parse-as-library Extension/MarkdownToHTMLRenderer.swift .build/TestBinaries/document-feature-tests.swift -o .build/TestBinaries/document-feature-tests
+	.build/TestBinaries/document-feature-tests
+
 release: check-release-config assets
 	rm -rf "$(RELEASE_ARCHIVE)" "$(RELEASE_APP_ZIP)" "$(DMG)"
 	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration $(PACKAGE_CONFIGURATION) -destination 'generic/platform=macOS' -archivePath "$(RELEASE_ARCHIVE)" clean archive CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$(DEVELOPER_ID_IDENTITY)" DEVELOPMENT_TEAM="$(DEVELOPER_ID_TEAM)" ENABLE_HARDENED_RUNTIME=YES OTHER_CODE_SIGN_FLAGS="--timestamp"

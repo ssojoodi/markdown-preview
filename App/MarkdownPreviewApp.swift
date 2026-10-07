@@ -17,6 +17,7 @@ struct MarkdownPreviewApp: App {
         }
         .windowResizability(.contentSize)
         .commands {
+            DocumentCommands()
             CommandGroup(replacing: .newItem) {
                 Button("New Markdown File") {
                     openDocumentState.createNewDocument()
@@ -88,6 +89,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 private struct AppPreviewView: View {
     @EnvironmentObject private var openDocumentState: OpenDocumentState
     @AppStorage("completedQuickLookSetupVersion") private var completedQuickLookSetupVersion = ""
+    @StateObject private var documentActions = DocumentActions()
+    @State private var documentLoadFailed = false
     @State private var selectedFileURL: URL?
     @State private var renderedHTML: String = PreviewHTML.emptyState
     @State private var markdownText: String = ""
@@ -130,6 +133,7 @@ private struct AppPreviewView: View {
                 )
             }
         }
+        .focusedSceneValue(\.documentCommands, commandContext)
         .frame(minWidth: 980, minHeight: 720)
         .background(DocumentWindowGuard(
             isDirty: isDirty,
@@ -149,6 +153,16 @@ private struct AppPreviewView: View {
         }
     }
 
+    private var commandContext: DocumentCommandContext {
+        let available = canEdit && !documentLoadFailed && !isShowingSetup
+            && (didCompleteQuickLookSetup || isSetupDeferred) && !isShowingRichTextConverter
+        return DocumentCommandContext(
+            actions: documentActions, canPrint: available && !documentActions.isPrinting,
+            canZoom: available && !isEditMode && !documentActions.isPrinting,
+            isEditing: isEditMode, title: documentTitle
+        )
+    }
+
     private var previewContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             advancedOptions
@@ -156,13 +170,14 @@ private struct AppPreviewView: View {
             if isEditMode {
                 MarkdownEditor(
                     text: $markdownText,
+                    actions: documentActions,
                     onTextChange: {
                         isDirty = true
                     }
                 )
                 .frame(minWidth: 840, maxWidth: .infinity, minHeight: 540, maxHeight: .infinity)
             } else {
-                WebPreview(html: renderedHTML, baseURL: previewBaseURL)
+                WebPreview(html: renderedHTML, baseURL: previewBaseURL, actions: documentActions)
                     .frame(minWidth: 840, maxWidth: .infinity, minHeight: 540, maxHeight: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
@@ -296,6 +311,7 @@ private struct AppPreviewView: View {
     private func createNewDocument() {
         guard confirmDiscardingChangesIfNeeded() else { return }
 
+        documentLoadFailed = false
         selectedFileURL = nil
         markdownText = ""
         renderedHTML = renderer.render(markdown: "", baseURL: renderBaseFileURL).html
@@ -373,6 +389,7 @@ private struct AppPreviewView: View {
     }
 
     private func loadMarkdownAndRender(from url: URL) {
+        documentLoadFailed = false
         let didAccess = url.startAccessingSecurityScopedResource()
         defer {
             if didAccess {
@@ -385,6 +402,7 @@ private struct AppPreviewView: View {
             markdownText = markdown
             renderedHTML = renderer.render(markdown: markdown, baseURL: url).html
         } catch {
+            documentLoadFailed = true
             isDirty = false
             markdownText = ""
             renderedHTML = """
@@ -812,6 +830,7 @@ private final class DocumentWindowDelegate: NSObject, NSWindowDelegate {
 
 private struct MarkdownEditor: NSViewRepresentable {
     @Binding var text: String
+    let actions: DocumentActions
     let onTextChange: () -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -852,6 +871,7 @@ private struct MarkdownEditor: NSViewRepresentable {
 
         scrollView.documentView = textView
         context.coordinator.textView = textView
+        actions.editor = textView
 
         return scrollView
     }
@@ -1762,17 +1782,216 @@ private struct SetupStep: View {
     }
 }
 
+private struct DocumentCommandContext {
+    let actions: DocumentActions
+    let canPrint: Bool
+    let canZoom: Bool
+    let isEditing: Bool
+    let title: String
+}
+
+private struct DocumentCommandKey: FocusedValueKey {
+    typealias Value = DocumentCommandContext
+}
+
+private extension FocusedValues {
+    var documentCommands: DocumentCommandContext? {
+        get { self[DocumentCommandKey.self] }
+        set { self[DocumentCommandKey.self] = newValue }
+    }
+}
+
+private struct DocumentCommands: Commands {
+    @FocusedValue(\.documentCommands) private var context
+
+    var body: some Commands {
+        CommandGroup(replacing: .printItem) {
+            Button("Print…") {
+                guard let context else { return }
+                context.actions.printDocument(editing: context.isEditing, title: context.title)
+            }
+            .keyboardShortcut("p", modifiers: .command)
+            .disabled(context?.canPrint != true)
+        }
+        CommandGroup(after: .toolbar) {
+            Divider()
+            Button("Zoom In") { context?.actions.changeZoom(by: 1) }
+                .keyboardShortcut("=", modifiers: .command)
+                .disabled(context?.canZoom != true || context?.actions.canZoomIn != true)
+            Button("Zoom Out") { context?.actions.changeZoom(by: -1) }
+                .keyboardShortcut("-", modifiers: .command)
+                .disabled(context?.canZoom != true || context?.actions.canZoomOut != true)
+            Button("Original") { context?.actions.resetZoom() }
+                .keyboardShortcut("0", modifiers: .command)
+                .disabled(context?.canZoom != true)
+        }
+    }
+}
+
+@MainActor
+private final class DocumentActions: NSObject, ObservableObject {
+    private var printCompletion: CheckedContinuation<Bool, Never>?
+    private static let zoomLevels: [CGFloat] = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3]
+    @Published private var zoomIndex = 2
+    @Published private(set) var isPrinting = false
+    weak var webView: WKWebView?
+    weak var editor: NSTextView?
+    var navigationGeneration = 0
+    var navigationError: Error?
+    var zoom: CGFloat { Self.zoomLevels[zoomIndex] }
+    var canZoomIn: Bool { zoomIndex < Self.zoomLevels.count - 1 }
+    var canZoomOut: Bool { zoomIndex > 0 }
+
+    func changeZoom(by offset: Int) {
+        zoomIndex = min(max(zoomIndex + offset, 0), Self.zoomLevels.count - 1)
+        applyZoom()
+    }
+
+    func resetZoom() {
+        zoomIndex = 2
+        applyZoom()
+    }
+
+    func applyZoom() {
+        guard let webView else { return }
+        webView.setMagnification(zoom, centeredAt: NSPoint(x: webView.bounds.midX, y: webView.bounds.midY))
+    }
+
+    func printDocument(editing: Bool, title: String) {
+        guard !isPrinting else { return }
+        if editing {
+            guard let editor, editor.window != nil else { return }
+            isPrinting = true
+            defer { isPrinting = false }
+            editor.printView(nil)
+            return
+        }
+        guard let webView, webView.window != nil else { return }
+        isPrinting = true
+        let generation = navigationGeneration
+        Task { @MainActor in
+            defer { isPrinting = false }
+            do {
+                let deadline = Date().addingTimeInterval(10)
+                while webView.isLoading {
+                    guard Date() < deadline else { throw PrintPreparationError.timeout }
+                    try await Task.sleep(nanoseconds: 50_000_000)
+                }
+                guard self.webView === webView, webView.window != nil,
+                      navigationGeneration == generation else { return }
+                if let navigationError { throw navigationError }
+                let position = try await webView.callAsyncJavaScript("""
+                    let timer;
+                    try {
+                        await Promise.race([
+                            (async () => {
+                                await window.markdownRenderReady;
+                                await document.fonts.ready;
+                                await Promise.all(Array.from(document.images, image =>
+                                    image.decode().catch(() => {})));
+                            })(),
+                            new Promise((_, reject) => {
+                                timer = setTimeout(() => reject(new Error('Print preparation timed out')), timeout);
+                            })
+                        ]);
+                        return { x: window.scrollX, y: window.scrollY };
+                    } finally { clearTimeout(timer); }
+                    """, arguments: ["timeout": max(1, deadline.timeIntervalSinceNow * 1000)],
+                    in: nil, contentWorld: .page) as? [String: Double]
+                guard self.webView === webView, webView.window != nil,
+                      navigationGeneration == generation else { return }
+                let magnification = webView.magnification
+                webView.magnification = 1
+                defer {
+                    webView.magnification = magnification
+                    if let position {
+                        webView.evaluateJavaScript("window.scrollTo(\(position["x"] ?? 0), \(position["y"] ?? 0))")
+                    }
+                }
+                let info = NSPrintInfo.shared.copy() as! NSPrintInfo
+                info.horizontalPagination = .fit
+                info.verticalPagination = .automatic
+                let operation = webView.printOperation(with: info)
+                operation.jobTitle = title
+                operation.showsPrintPanel = true
+                operation.showsProgressPanel = true
+                _ = await runPrintOperation(operation, for: webView.window!)
+            } catch {
+                guard self.webView === webView, webView.window != nil,
+                      navigationGeneration == generation else { return }
+                let alert = NSAlert()
+                alert.messageText = "Unable to prepare document for printing"
+                alert.informativeText = "Wait for the preview to finish loading, then try Print again.\n\n\(error.localizedDescription)"
+                alert.runModal()
+            }
+        }
+    }
+
+    // WebKit prepares pagination asynchronously; a window-modal operation lets
+    // its callbacks run before AppKit starts drawing pages.
+    func runPrintOperation(_ operation: NSPrintOperation, for window: NSWindow) async -> Bool {
+        await withCheckedContinuation { continuation in
+            printCompletion = continuation
+            operation.runModal(for: window, delegate: self,
+                didRun: #selector(printOperationDidRun(_:success:contextInfo:)), contextInfo: nil)
+        }
+    }
+
+    @objc private func printOperationDidRun(_ operation: NSPrintOperation, success: Bool,
+                                           contextInfo: UnsafeMutableRawPointer?) {
+        let completion = printCompletion
+        printCompletion = nil
+        completion?.resume(returning: success)
+    }
+
+    private enum PrintPreparationError: LocalizedError {
+        case timeout
+        var errorDescription: String? { "The preview did not finish loading within 10 seconds." }
+    }
+}
+
 private struct WebPreview: NSViewRepresentable {
     let html: String
     let baseURL: URL?
+    let actions: DocumentActions
+
+    func makeCoordinator() -> Coordinator { Coordinator(actions: actions) }
 
     func makeNSView(context: Context) -> WKWebView {
         let webView = WKWebView(frame: .zero)
         webView.setValue(false, forKey: "drawsBackground")
+        webView.navigationDelegate = context.coordinator
+        actions.webView = webView
         return webView
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
+        let coordinator = context.coordinator
+        guard coordinator.html != html || coordinator.baseURL != baseURL else { return }
+        coordinator.html = html
+        coordinator.baseURL = baseURL
+        actions.navigationGeneration += 1
+        actions.navigationError = nil
         webView.loadHTMLString(html, baseURL: baseURL)
+    }
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        let actions: DocumentActions
+        var html: String?
+        var baseURL: URL?
+        init(actions: DocumentActions) { self.actions = actions }
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            actions.applyZoom()
+        }
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            actions.navigationError = error
+        }
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            actions.navigationError = error
+        }
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            actions.navigationError = NSError(domain: "MarkdownPreview", code: 1002,
+                userInfo: [NSLocalizedDescriptionKey: "The preview stopped responding. Reload the file and try again."])
+        }
     }
 }
