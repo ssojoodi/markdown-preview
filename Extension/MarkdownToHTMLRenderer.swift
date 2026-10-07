@@ -289,6 +289,21 @@ final class MarkdownToHTMLRenderer {
               max-width: 100%;
               height: auto;
             }
+            @media print {
+              :root { color-scheme: light; }
+              body { color: black; background: white; max-width: none; margin: 0; padding: 0; }
+              @page { margin: 15mm; }
+              pre { white-space: pre-wrap; overflow: visible; overflow-wrap: anywhere; }
+              table { display: table; width: 100%; table-layout: fixed; overflow: visible; }
+              th, td { overflow-wrap: anywhere; }
+              thead { display: table-header-group; }
+              h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+              img, .mermaid { break-inside: avoid; }
+              img { max-height: 240mm; object-fit: contain; }
+              .mermaid { overflow: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .mermaid-dark .mermaid { background: #1f2020; color: #ccc; }
+              .mermaid svg { max-width: 100% !important; max-height: 240mm; }
+            }
           </style>
         </head>
         <body>
@@ -314,24 +329,31 @@ final class MarkdownToHTMLRenderer {
         </script>
         <script>
           (() => {
-            const renderMermaid = () => {
-              if (!window.mermaid) { return; }
-              const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-              window.mermaid.initialize({
-                startOnLoad: false,
-                securityLevel: "strict",
-                theme: isDark ? "dark" : "default"
-              });
-              window.mermaid.run({ querySelector: ".mermaid" }).catch((error) => {
-                console.error("Mermaid render failed", error);
-              });
-            };
+            window.markdownRenderReady = new Promise(resolve => {
+              const renderMermaid = async () => {
+                try {
+                  if (!window.mermaid) { return; }
+                  const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+                  document.documentElement.classList.toggle("mermaid-dark", isDark);
+                  window.mermaid.initialize({
+                    startOnLoad: false,
+                    securityLevel: "strict",
+                    theme: isDark ? "dark" : "default"
+                  });
+                  await window.mermaid.run({ querySelector: ".mermaid" });
+                } catch (error) {
+                  console.error("Mermaid render failed", error);
+                } finally {
+                  resolve();
+                }
+              };
 
-            if (document.readyState === "loading") {
-              document.addEventListener("DOMContentLoaded", renderMermaid);
-            } else {
-              renderMermaid();
-            }
+              if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", renderMermaid);
+              } else {
+                renderMermaid();
+              }
+            });
           })();
         </script>
         """
